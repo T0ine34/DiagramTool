@@ -2,3 +2,7 @@ env/
 *.pdf
 *.log
 *.aux
+*.dump
+*.txt
+*.json
+
