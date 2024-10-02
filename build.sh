@@ -4,4 +4,6 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-/home/antoine/DiagramTool/env/bin/python3.12 src/python/python.py $1 --dump --debug && /home/antoine/DiagramTool/env/bin/python3.12 src/structToTeX.py && /home/antoine/DiagramTool/env/bin/python3.12 src/latex.py test.tex --debug
+python src/python/python.py $1 --dump --debug
+python src/structToTeX.py
+python src/latex.py test.tex --debug

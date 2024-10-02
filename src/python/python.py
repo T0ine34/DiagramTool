@@ -361,3 +361,4 @@ if __name__ == "__main__":
     with open("out.json", "w") as file:
         file.write(json.dumps(parsed, indent=4))
     
+    Logger.info("Done")

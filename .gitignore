@@ -4,4 +4,5 @@ env/
 *.aux
 *.dump
 *.json
-
+resources/dynamic/
+dump/

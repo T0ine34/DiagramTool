@@ -46,7 +46,9 @@ def Tex2Pdf(tex_file : str):
 
         for dep in dependencies:
             if os.path.exists(dep):
-                shutil.copy(dep, temp_dir)
+                newPath = os.path.join(temp_dir, dep)
+                os.makedirs(os.path.dirname(newPath), exist_ok=True)
+                shutil.copy(dep, newPath)
         shutil.copy(tex_file, temp_dir)
 
         os.chdir(temp_dir)
