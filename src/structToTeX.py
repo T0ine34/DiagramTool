@@ -56,7 +56,7 @@ def Class(className : str, classDict : dict):
         for name, method in classDict['methods'].items()
     ]
     result =  """\\begin{tikzpicture}
-\\begin{class}[text width=17cm]{""" + className + """}{0,0}
+\\begin{class}[text width=15cm]{""" + className + """}{0,0}
 """ + "\n".join(attibutes) + """
 """ + "\n".join(methods) + """
 \\end{class}
@@ -86,13 +86,39 @@ def Enum(enumName : str, enumDict : dict):
     return result.replace("_", r"\string_")
 
 
+def createMissingClasses(data : dict) -> None:
+    # add missing classes to data (class referenced as inheritance parent, but not defined)
+    classNames = list(data['classes'].keys())
+    for className in classNames:
+        classData = data['classes'][className]
+        for parent in classData['inheritFrom']:
+            if parent not in data['classes']:
+                data['classes'][parent] = {
+                    "attributes": {},
+                    "properties": {},
+                    "methods": {},
+                    "parents": []
+                }
+
+
+
+def createClassDiagram(data : dict):
+    createMissingClasses(data)
+    with open("testClass.tex", 'w') as f:
+        for className, classData in data['classes'].items():
+            f.write(Class(className, classData))
+        
+    
+
+
 if __name__ == "__main__":
     with open("out.json", 'r') as f:
         data = json.load(f)
 
-    with open("testClass.tex", 'w') as f:
-        for className, classData in data['classes'].items():
-            f.write(Class(className, classData))
+    # with open("testClass.tex", 'w') as f:
+    #     for className, classData in data['classes'].items():
+    #         f.write(Class(className, classData))
+    createClassDiagram(data)
         
     with open("testEnum.tex", 'w') as f:
         for enumName, enumData in data['enums'].items():
