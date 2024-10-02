@@ -37,18 +37,18 @@ def getDependenciesRecursive(tex_file : str):
 
 
 def Tex2Pdf(tex_file : str):
-    with TempDir() as temp_dir, TempFile() as stdout_file:
+    with (TempDir() as temp_dir, TempFile() as stdout_file):
         Logger.debug(f"Temp dir: {temp_dir}")
         current_dir = os.getcwd()
-        
+
         dependencies = getDependenciesRecursive(tex_file)
         Logger.debug(f"Dependencies: {dependencies}")
-        
+
         for dep in dependencies:
             if os.path.exists(dep):
                 shutil.copy(dep, temp_dir)
         shutil.copy(tex_file, temp_dir)
-        
+
         os.chdir(temp_dir)
         Logger.debug(f"running pdflatex -halt-on-error -interaction=errorstopmode -file-line-error {tex_file}")
         try:
@@ -56,16 +56,18 @@ def Tex2Pdf(tex_file : str):
             match proc.returncode:
                 case 0:
                     shutil.copy(tex_file.replace(".tex", ".pdf"), current_dir)
-                    Logger.info(f"PDF file {tex_file.replace('.tex', '.pdf')} created")
-                
+                    Logger.info(
+                        f"PDF file {tex_file.replace('.tex', '.pdf')} created"
+                    )
+
                 case 32512:
-                    Logger.error(f"pdflatex not found; please install it")                
-                    
+                    Logger.error("pdflatex not found; please install it")
+
                 case _:
                     Logger.error(f"Failed to convert {tex_file} to pdf")
                     Logger.error(f"stdout: {open(stdout_file).read()}")
         except sp.TimeoutExpired:
-            Logger.error(f"pdflatex took too long to run")
+            Logger.error("pdflatex took too long to run")
             Logger.error(f"stdout: {open(stdout_file).read()}")
         os.chdir(current_dir)
         

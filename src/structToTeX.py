@@ -7,7 +7,9 @@ import json
 
 Logger.setLevel('stdout', LEVELS.DEBUG)
 
-@debugFunc()
+Logger.setModule("structToTeX")
+
+
 def visibiliyToTeX(visibility : str):
     if visibility == "private":
         return "-"
@@ -21,15 +23,38 @@ def visibiliyToTeX(visibility : str):
 
 def Class(className : str, classDict : dict):
     
-    attibutes = []
-    methods = []
-    for name, attribute in classDict['attributes'].items():
-        attibutes.append("\\attribute{"+visibiliyToTeX(attribute['visibility'])+" "+name.split('.')[-1]+" : "+attribute['type']+"}")
-    for name, property in classDict['properties'].items():
-        attibutes.append("\\attribute{"+visibiliyToTeX(property['visibility'])+" "+name.split('.')[-1]+" : "+property['type']+"}")
-    for name, method in classDict['methods'].items():
-        methods.append("\\operation{"+visibiliyToTeX(method['visibility'])+" "+name.split('.')[-1]+"("+", ".join(method['args'])+") : "+method['return_type']+"}")
-    
+    attibutes = [
+        "\\attribute{"
+        + visibiliyToTeX(attribute['visibility'])
+        + " "
+        + name.split('.')[-1]
+        + " : "
+        + attribute['type']
+        + "}"
+        for name, attribute in classDict['attributes'].items()
+    ]
+    attibutes.extend(
+        "\\attribute{"
+        + visibiliyToTeX(property['visibility'])
+        + " "
+        + name.split('.')[-1]
+        + " : "
+        + property['type']
+        + "}"
+        for name, property in classDict['properties'].items()
+    )
+    methods = [
+        "\\operation{"
+        + visibiliyToTeX(method['visibility'])
+        + " "
+        + name.split('.')[-1]
+        + "("
+        + ", ".join(method['args'])
+        + ") : "
+        + method['return_type']
+        + "}"
+        for name, method in classDict['methods'].items()
+    ]
     result =  """\\begin{tikzpicture}
 \\begin{class}[text width=17cm]{""" + className + """}{0,0}
 """ + "\n".join(attibutes) + """
@@ -38,20 +63,18 @@ def Class(className : str, classDict : dict):
 \\end{tikzpicture}
 """
 
-    return result.replace("_", "\string_")
+    return result.replace("_", r"\string_")
 
 
 def Enum(enumName : str, enumDict : dict):
-    values = []
     methods = []
-    for name in enumDict['values']:
-        values.append("\\attribute{"+name+"}")
+    values = ["\\attribute{"+name+"}" for name in enumDict['values']]
     for name, method in enumDict['methods'].items():
         if method['isStatic']:
             methods.append("\\operation{\\underline{"+visibiliyToTeX(method['visibility'])+" "+name.split('.')[-1]+"("+", ".join(method['args'])+") : "+method['return_type']+"}}")
         else:
             methods.append("\\operation{"+visibiliyToTeX(method['visibility'])+" "+name.split('.')[-1]+"("+", ".join(method['args'])+") : "+method['return_type']+"}")
-    
+
     result =  """\\begin{tikzpicture}
 \\begin{class}[text width=8cm]{""" + enumName + """}{0,0}
 """ + "\n".join(values) + """
@@ -60,7 +83,7 @@ def Enum(enumName : str, enumDict : dict):
 \\end{tikzpicture}
 """
 
-    return result.replace("_", "\string_")
+    return result.replace("_", r"\string_")
 
 
 if __name__ == "__main__":
