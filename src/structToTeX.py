@@ -53,7 +53,7 @@ def Enum(enumName : str, enumDict : dict):
             methods.append("\\operation{"+visibiliyToTeX(method['visibility'])+" "+name.split('.')[-1]+"("+", ".join(method['args'])+") : "+method['return_type']+"}")
     
     result =  """\\begin{tikzpicture}
-\\begin{class}[text width=17cm]{""" + enumName + """}{0,0}
+\\begin{class}[text width=8cm]{""" + enumName + """}{0,0}
 """ + "\n".join(values) + """
 """ "\n".join(methods) + """
 \\end{class}
