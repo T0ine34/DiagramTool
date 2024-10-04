@@ -9,6 +9,7 @@ except ImportError:
 
 from gamuLogger import Logger, debugFunc, LEVELS
 import json
+import os
 
 Logger.setLevel('stdout', LEVELS.DEBUG)
 
@@ -101,37 +102,41 @@ def createMissingClasses(data : dict) -> None:
                 }
 
 def sortClasses(data : dict) -> dict:
-    # sort classes by inheritance
-    sortedClasses = {}
-    for className, classData in data['classes'].items():
-        if classData['inheritFrom'] == []:
-            sortedClasses[className] = classData
+    sortedClasses = {
+        className: classData
+        for className, classData in data['classes'].items()
+        if classData['inheritFrom'] == []
+    }
     for className, classData in data['classes'].items():
         if className not in sortedClasses:
             sortedClasses[className] = classData
     return sortedClasses
 
 def calcInheritanceLevels(data : dict) -> dict:
-    # calculate inheritance levels
-    inheritanceLevels = {}
-    for className, classData in data['classes'].items():
-        inheritanceLevels[className] = 0
+    inheritanceLevels = {
+        className: 0 for className, classData in data['classes'].items()
+    }
     for className, classData in data['classes'].items():
         for parent in classData['inheritFrom']:
             inheritanceLevels[className] = max(inheritanceLevels[className], inheritanceLevels[parent]+1)
     return inheritanceLevels
 
 def createClassDiagram(data : dict):
+    Logger.info("creating class diagram")
     createMissingClasses(data)
     classes = sortClasses(data)
     # inheritanceLevels = calcInheritanceLevels(data)
     classes = [Class.fromDict(className, classData) for className, classData in classes.items()]
-    Class.placeAll()
+    grid = Class.placeAll(20)
 
+    Logger.info('writing classes to file "resources/dynamic/classes.tex"')
+    os.makedirs("resources/dynamic", exist_ok=True)
     with open("resources/dynamic/classes.tex", 'w') as f:
         f.write("\\begin{tikzpicture}\n")
-        for class_ in classes:
-            f.write(class_.compute())
+        for row in grid:
+            for cell in row:
+                if cell:
+                    f.write(cell.compute())
         f.write("\\end{tikzpicture}")
         
     
@@ -140,6 +145,7 @@ def createClassDiagram(data : dict):
 if __name__ == "__main__":
     with open("out.json", 'r') as f:
         data = json.load(f)
+    Logger.info("data loaded")
 
     # with open("testClass.tex", 'w') as f:
     #     for className, classData in data['classes'].items():
