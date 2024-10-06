@@ -39,6 +39,9 @@ def getreturnString(node : ast.AST) -> str:
         return getReturnStringConst(node)
     elif isinstance(node, ast.Name):
         return node.id
+    elif isinstance(node, ast.Subscript):
+        return f"{getreturnString(node.value)}[{', '.join(getreturnString(elts) for elts in node.slice.elts)}]"
+        
     
     
 def getTypeComment(filepath : str, lineno : int) -> str:
@@ -264,7 +267,7 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
                     #it's a method
                     methods[".".join(parentStack + [str(node.name), str(element.name)])] = {
                         "args": [arg.arg for arg in element.args.args],
-                        "return_type": getreturnString(element.returns) if element.returns else getType(element.lineno-1),
+                        "return_type": "" if str(element.name) == "__init__" else getreturnString(element.returns) if element.returns else getType(element.lineno-1),
                         "isStatic": "staticmethod" in [decorator.id for decorator in element.decorator_list],
                         "visibility": "private" if element.name.startswith("__") else "protected" if element.name.startswith("_") else "public"
                     }
@@ -318,14 +321,19 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
             importedFiles.append(str(path))
 
     for element in node.body:
-        if isinstance(element, ast.ImportFrom):
-            parseImport(element)
-        elif isinstance(element, ast.FunctionDef):
+        # if isinstance(element, ast.ImportFrom):
+        #     parseImport(element)
+        if isinstance(element, ast.FunctionDef):
             parseFunction(element)
         elif isinstance(element, ast.ClassDef):
             parseClassOrEnum(element)
         elif isinstance(element, ast.Assign):
             parseGlobalVariables(element)
+            
+    # search in all nodes for ImportFrom nodes
+    for node in ast.walk(node):
+        if isinstance(node, ast.ImportFrom):
+            parseImport(node)
 
 
     if parseIncludedFiles:

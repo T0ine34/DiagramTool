@@ -5,5 +5,4 @@ if [ -z "$1" ]; then
 fi
 
 python src/python/python.py $1 --dump --debug
-python src/structToTeX.py
-python src/latex.py test.tex --debug
+python src/svg/svg.py
