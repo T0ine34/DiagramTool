@@ -3,7 +3,7 @@ import json
 from . import SVG, createMissingClasses, Class, Enum
 
 
-if __name__ == "__main__":
+def main():
     with open('out.json', 'r') as file:
         data = json.load(file)
     createMissingClasses(data)
@@ -29,3 +29,6 @@ if __name__ == "__main__":
     svg.attrib('height', f"{height}")
 
     svg.save("test.svg", showBorder=True)
+
+if __name__ == "__main__":
+    main()

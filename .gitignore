@@ -1,4 +1,4 @@
-env/
+*env/
 *.pdf
 *.log
 *.aux

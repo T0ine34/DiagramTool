@@ -5,4 +5,4 @@ if [ -z "$1" ]; then
 fi
 
 python src/python/python.py $1 --dump --debug
-python src/svg/svg.py
+python src/svg/__main__.py

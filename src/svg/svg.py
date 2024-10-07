@@ -7,9 +7,8 @@ except ImportError:
     from customTypes import Class, Enum, Relation, Element
     from utils import createMissingClasses
     
-
+    
 SPACE = 20
-
 
 class SVG:
     def __init__(self) -> None:
@@ -69,7 +68,7 @@ class SVG:
                     obj.place(obj.x + SPACE, obj.y)
                 
                 self.append(obj.build())
-                x += obj.width + 30
+                x += obj.width + SPACE
             y += lineHeights[i] + SPACE
             
         # place enums (all in one line)
