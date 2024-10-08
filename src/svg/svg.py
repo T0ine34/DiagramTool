@@ -8,15 +8,18 @@ except ImportError:
     from utils import createMissingClasses
     
     
-SPACE = 20
+SPACE = 50
 
 class SVG:
     def __init__(self) -> None:
         self.__tree = ET.Element("svg")
         self.__tree.attrib['xmlns'] = "http://www.w3.org/2000/svg"
+        self.__objects = []
 
     def append(self, element) -> None:
-        self.__tree.append(element)
+        if isinstance(element, Element):
+            self.__objects.append(element)
+        self.__tree.append(element.build())
         
     def save(self, filename : str, showBorder : bool = False) -> None:
         with open(filename, "w") as file:
@@ -27,6 +30,12 @@ class SVG:
         self.__tree.attrib[key] = value
         
     def toString(self, showBorder : bool = False) -> str:
+        # calculate width and height of svg
+        width = max(int(obj.SE[0]) for obj in self.__objects) + SPACE
+        height = max(int(obj.SE[1]) for obj in self.__objects) + SPACE
+        self.attrib('width', f"{width}")
+        self.attrib('height', f"{height}")
+        
         if showBorder:
             border = ET.Element("rect")
             border.attrib['x'] = "0"
@@ -67,16 +76,16 @@ class SVG:
                 while any(obj.isOverlapping(other) for other in line if other != obj):
                     obj.place(obj.x + SPACE, obj.y)
                 
-                self.append(obj.build())
+                self.append(obj)
                 x += obj.width + SPACE
             y += lineHeights[i] + SPACE
             
         # place enums (all in one line)
-        y += SPACE
+        y -= SPACE # remove last SPACE
         x = SPACE
         for obj in [obj for obj in objects if isinstance(obj, Enum)]:
             obj.place(x, y)
-            self.append(obj.build())
+            self.append(obj)
             x += obj.width + 30
         
             
@@ -86,5 +95,5 @@ class SVG:
             for targetName in sourceData['inheritFrom']:
                 target = next(obj for obj in objects if obj.name == targetName)
                 relation = Relation(source, target, Relation.TYPE.INHERITANCE)
-                self.append(relation.build())
+                self.append(relation)
 

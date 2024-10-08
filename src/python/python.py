@@ -7,31 +7,35 @@ from gamuLogger import Logger, LEVELS
 Logger.setModule("PythonParser")
 
 
-def getTree(file) -> ast.Module:
-    with open(file) as file:
-        return ast.parse(file.read())
-    
-
-def getreturnStringAttr(node : ast.Attribute) -> str:
-    if isinstance(node.value, ast.Attribute):
-        return f"{getreturnStringAttr(node.value)}.{node.attr}"
-    return f"{node.value.id}.{node.attr}"
-
-def getReturnStringConst(node : ast.Constant) -> str:
-    return str(node.value)
-
-
 def dumpOnException(func):
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            Logger.error(f"An error occurred: {e}")
+            Logger.error(f"An error occurred in function {func.__name__} : {e}")
             Logger.info(ast.dump(args[0], indent=4))
             raise e
     return wrapper
 
 
+def getTree(file) -> ast.Module:
+    with open(file) as file:
+        return ast.parse(file.read())
+    
+
+@dumpOnException
+def getreturnStringAttr(node : ast.Attribute) -> str:
+    if isinstance(node.value, ast.Attribute):
+        return f"{getreturnStringAttr(node.value)}.{node.attr}"
+    return f"{node.value.id}.{node.attr}"
+
+
+@dumpOnException
+def getReturnStringConst(node : ast.Constant) -> str:
+    return str(node.value)
+
+
+@dumpOnException
 def getreturnString(node : ast.AST) -> str:
     if isinstance(node, ast.Attribute):
         return getreturnStringAttr(node)
@@ -41,6 +45,10 @@ def getreturnString(node : ast.AST) -> str:
         return node.id
     elif isinstance(node, ast.Subscript):
         return f"{getreturnString(node.value)}[{', '.join(getreturnString(elts) for elts in node.slice.elts)}]"
+    elif isinstance(node, ast.List):
+        return f"[{', '.join(getreturnString(elt) for elt in node.elts)}]"
+    elif isinstance(node, ast.Tuple):
+        return f"({', '.join(getreturnString(elt) for elt in node.elts)})"
         
     
     
@@ -303,7 +311,7 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
 
     @dumpOnException
     def parseImport(node : ast.ImportFrom) -> None:
-        moduleName = node.module
+        moduleName = node.module if node.module else ""
         backTimes = node.level
         if backTimes == 0:
             # the module is in the same directory, or it's a built-in module
@@ -315,10 +323,17 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
             path = Path(file).parent
             for _ in range(backTimes-1):
                 path = path.parent
-            path = path / f"{moduleName.replace('.', '/')}.py"
-            if not path.exists():
-                raise FileNotFoundError(f"File {path} not found")
-            importedFiles.append(str(path))
+                
+            moduleName = moduleName.replace('.', '/')
+            if moduleName == "":
+                moduleName = "."
+                
+            filepath = path / f"{moduleName}.py"
+            if not filepath.exists():
+                filepath = path / f"{moduleName}/__init__.py"
+            if not filepath.exists():
+                raise FileNotFoundError("files '" + str(path / f"{moduleName}.py") + "' and '" + str(path / f"{moduleName}/__init__.py") + "' not found")
+            importedFiles.append(str(filepath))
 
     for element in node.body:
         # if isinstance(element, ast.ImportFrom):

@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1931" height="1313">
-  <g class="class" id="SVG" width="550.0" height="246" color="black" transform="translate(50 50)">
+<svg xmlns="http://www.w3.org/2000/svg" width="1801.0" height="1203">
+  <g class="class" id="SVG" width="550.0" height="246" color="black" transform="translate(20 20)">
     <rect class="border" x="0" y="0" width="550.0" height="246" stroke-width="1" fill="none" stroke="currentColor"/>
     <text class="className" transform="translate(275.0, 25)" text-anchor="middle" x="0" y="0" fill="currentColor" stroke="none" font-size="26px">SVG</text>
     <line x1="0" y1="0" x2="550.0" y2="0" stroke="currentColor" stroke-width="1" transform="translate(0 36)"/>
@@ -12,7 +12,7 @@
     <text class="method" transform="translate(5, 201)" x="0" y="0" font-size="20px" fill="currentColor" stroke="none">+ placeObjects(self, objects) : None</text>
     <text class="method" transform="translate(5, 226)" x="0" y="0" font-size="20px" fill="currentColor" stroke="none">+ placeRelations(self, objects, data) : None</text>
   </g>
-  <g class="class" id="Element" width="437.5" height="546" color="black" transform="translate(650.0 50)">
+  <g class="class" id="Element" width="437.5" height="546" color="black" transform="translate(590.0 20)">
     <rect class="border" x="0" y="0" width="437.5" height="546" stroke-width="1" fill="none" stroke="currentColor"/>
     <text class="className" transform="translate(218.75, 25)" text-anchor="middle" x="0" y="0" fill="currentColor" stroke="none" font-size="26px">Element</text>
     <line x1="0" y1="0" x2="437.5" y2="0" stroke="currentColor" stroke-width="1" transform="translate(0 36)"/>
@@ -37,7 +37,7 @@
     <text class="method" transform="translate(5, 501)" x="0" y="0" font-size="20px" fill="currentColor" stroke="none">+ getNearSide(self, x, y) : float</text>
     <text class="method" transform="translate(5, 526)" x="0" y="0" font-size="20px" fill="currentColor" stroke="none">+ isOverlapping(self, other) : bool</text>
   </g>
-  <g class="class" id="Relation" width="612.5" height="121" color="black" transform="translate(1137.5 50)">
+  <g class="class" id="Relation" width="612.5" height="121" color="black" transform="translate(1047.5 20)">
     <rect class="border" x="0" y="0" width="612.5" height="121" stroke-width="1" fill="none" stroke="currentColor"/>
     <text class="className" transform="translate(306.25, 25)" text-anchor="middle" x="0" y="0" fill="currentColor" stroke="none" font-size="26px">Relation</text>
     <line x1="0" y1="0" x2="612.5" y2="0" stroke="currentColor" stroke-width="1" transform="translate(0 36)"/>
@@ -45,7 +45,7 @@
     <text class="method" transform="translate(5, 76)" x="0" y="0" font-size="20px" fill="currentColor" stroke="none">&#8211; __init__(self, source, target, relationType) : </text>
     <text class="method" transform="translate(5, 101)" x="0" y="0" font-size="20px" fill="currentColor" stroke="none">+ build(self) : ET.Element</text>
   </g>
-  <g class="class" id="Class" width="887.5" height="321" color="black" transform="translate(425.0 646)">
+  <g class="class" id="Class" width="887.5" height="321" color="black" transform="translate(365.0 586)">
     <rect class="border" x="0" y="0" width="887.5" height="321" stroke-width="1" fill="none" stroke="currentColor"/>
     <text class="className" transform="translate(443.75, 25)" text-anchor="middle" x="0" y="0" fill="currentColor" stroke="none" font-size="26px">Class</text>
     <line x1="0" y1="0" x2="887.5" y2="0" stroke="currentColor" stroke-width="1" transform="translate(0 36)"/>
@@ -61,7 +61,7 @@
     <text class="method" transform="translate(5, 276)" x="0" y="0" font-size="20px" fill="currentColor" stroke="none">+ build(self) : ET.Element</text>
     <text class="method" transform="translate(5, 301)" x="0" y="0" font-size="20px" fill="currentColor" stroke="none">+ getBestX(self) : int</text>
   </g>
-  <g class="class" id="Enum" width="525.0" height="196" color="black" transform="translate(1356.0 646)">
+  <g class="class" id="Enum" width="525.0" height="196" color="black" transform="translate(1266.0 586)">
     <rect class="border" x="0" y="0" width="525.0" height="196" stroke-width="1" fill="none" stroke="currentColor"/>
     <text class="className" transform="translate(262.5, 25)" text-anchor="middle" x="0" y="0" fill="currentColor" stroke="none" font-size="26px">Enum</text>
     <line x1="0" y1="0" x2="525.0" y2="0" stroke="currentColor" stroke-width="1" transform="translate(0 36)"/>
@@ -72,7 +72,7 @@
     <text class="method" transform="translate(5, 151)" x="0" y="0" font-size="20px" fill="currentColor" stroke="none">+ fromDict(name, enumDict) : Enum</text>
     <text class="method" transform="translate(5, 176)" x="0" y="0" font-size="20px" fill="currentColor" stroke="none">+ build(self) : ET.Element</text>
   </g>
-  <g class="enum" id="LANGUAGES" width="312.5" height="196" color="black" transform="translate(50 1017)">
+  <g class="enum" id="LANGUAGES" width="312.5" height="196" color="black" transform="translate(20 947)">
     <rect class="border" x="0" y="0" width="312.5" height="196" stroke-width="1" fill="none" stroke="currentColor"/>
     <text class="enumSurTitle" transform="translate(156.25, 25)" text-anchor="middle" x="0" y="0" fill="currentColor" stroke="none" font-size="20px" font-style="italic">&lt;&lt;enumeration&gt;&gt;</text>
     <text class="enumName" transform="translate(156.25, 25)" text-anchor="middle" x="0" y="30" fill="currentColor" stroke="none" font-size="26px">LANGUAGES</text>
@@ -83,7 +83,7 @@
     <line x1="0" y1="0" x2="312.5" y2="0" stroke="currentColor" stroke-width="1" transform="translate(0 161)"/>
     <text class="method" transform="translate(5, 181)" x="0" y="0" font-size="20px" fill="currentColor" stroke="none">&#8211; __str__(self) : Unknown</text>
   </g>
-  <g class="enum" id="ARROW_TYPE" width="187.5" height="171" color="black" transform="translate(392.5 1017)">
+  <g class="enum" id="ARROW_TYPE" width="187.5" height="171" color="black" transform="translate(362.5 947)">
     <rect class="border" x="0" y="0" width="187.5" height="171" stroke-width="1" fill="none" stroke="currentColor"/>
     <text class="enumSurTitle" transform="translate(93.75, 25)" text-anchor="middle" x="0" y="0" fill="currentColor" stroke="none" font-size="20px" font-style="italic">&lt;&lt;enumeration&gt;&gt;</text>
     <text class="enumName" transform="translate(93.75, 25)" text-anchor="middle" x="0" y="30" fill="currentColor" stroke="none" font-size="26px">ARROW_TYPE</text>
@@ -93,7 +93,7 @@
     <text class="value" transform="translate(5, 136)" x="0" y="0" font-size="20px" fill="currentColor" stroke="none">OPEN_TRIANGLE</text>
     <line x1="0" y1="0" x2="187.5" y2="0" stroke="currentColor" stroke-width="1" transform="translate(0 161)"/>
   </g>
-  <g class="enum" id="LINE_TYPE" width="187.5" height="146" color="black" transform="translate(610.0 1017)">
+  <g class="enum" id="LINE_TYPE" width="187.5" height="146" color="black" transform="translate(580.0 947)">
     <rect class="border" x="0" y="0" width="187.5" height="146" stroke-width="1" fill="none" stroke="currentColor"/>
     <text class="enumSurTitle" transform="translate(93.75, 25)" text-anchor="middle" x="0" y="0" fill="currentColor" stroke="none" font-size="20px" font-style="italic">&lt;&lt;enumeration&gt;&gt;</text>
     <text class="enumName" transform="translate(93.75, 25)" text-anchor="middle" x="0" y="30" fill="currentColor" stroke="none" font-size="26px">LINE_TYPE</text>
@@ -102,7 +102,7 @@
     <text class="value" transform="translate(5, 111)" x="0" y="0" font-size="20px" fill="currentColor" stroke="none">DASHED</text>
     <line x1="0" y1="0" x2="187.5" y2="0" stroke="currentColor" stroke-width="1" transform="translate(0 136)"/>
   </g>
-  <g class="enum" id="Relation.TYPE" width="211.25" height="246" color="black" transform="translate(827.5 1017)">
+  <g class="enum" id="Relation.TYPE" width="211.25" height="246" color="black" transform="translate(797.5 947)">
     <rect class="border" x="0" y="0" width="211.25" height="246" stroke-width="1" fill="none" stroke="currentColor"/>
     <text class="enumSurTitle" transform="translate(105.625, 25)" text-anchor="middle" x="0" y="0" fill="currentColor" stroke="none" font-size="20px" font-style="italic">&lt;&lt;enumeration&gt;&gt;</text>
     <text class="enumName" transform="translate(105.625, 25)" text-anchor="middle" x="0" y="30" fill="currentColor" stroke="none" font-size="26px">Relation.TYPE</text>
@@ -117,17 +117,17 @@
   </g>
   <g class="relation">
     <g class="relation">
-      <line x1="868.75" y1="646" x2="868.75" y2="596" stroke="currentColor" stroke-width="1"/>
+      <line x1="808.75" y1="586" x2="808.75" y2="566" stroke="currentColor" stroke-width="1"/>
     </g>
-    <polygon points="863.75,591 873.75,596 863.75,601" fill="currentColor" stroke="currentColor" stroke-width="1" transform="rotate(-90 868.75 596) translate(-5)"/>
+    <polygon points="803.75,561 813.75,566 803.75,571" fill="currentColor" stroke="currentColor" stroke-width="1" transform="rotate(-90 808.75 566) translate(-5)"/>
   </g>
   <g class="relation">
     <g class="relation">
-      <line x1="1618.5" y1="646" x2="1618.5" y2="621" stroke="currentColor" stroke-width="1"/>
-      <line x1="1618.5" y1="621" x2="868.75" y2="621" stroke="currentColor" stroke-width="1"/>
-      <line x1="868.75" y1="621" x2="868.75" y2="596" stroke="currentColor" stroke-width="1"/>
+      <line x1="1528.5" y1="586" x2="1528.5" y2="576" stroke="currentColor" stroke-width="1"/>
+      <line x1="1528.5" y1="576" x2="808.75" y2="576" stroke="currentColor" stroke-width="1"/>
+      <line x1="808.75" y1="576" x2="808.75" y2="566" stroke="currentColor" stroke-width="1"/>
     </g>
-    <polygon points="863.75,591 873.75,596 863.75,601" fill="currentColor" stroke="currentColor" stroke-width="1" transform="rotate(-90 868.75 596) translate(-5)"/>
+    <polygon points="803.75,561 813.75,566 803.75,571" fill="currentColor" stroke="currentColor" stroke-width="1" transform="rotate(-90 808.75 566) translate(-5)"/>
   </g>
-  <rect x="0" y="0" width="1931" height="1313" fill="none" stroke="red" stroke-width="1"/>
+  <rect x="0" y="0" width="1801.0" height="1203" fill="none" stroke="red" stroke-width="1"/>
 </svg>

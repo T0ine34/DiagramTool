@@ -7,3 +7,4 @@
 resources/dynamic/
 dump/
 __pycache__/
+dist/

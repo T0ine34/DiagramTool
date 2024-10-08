@@ -1,7 +1,6 @@
 # import xml.etree.ElementTree as ET
 import lxml.etree as ET
 from enum import Enum
-import math
 
 try:
     from .utils import getTextWidth, getTextHeight, Attribute2Text, Method2Text
@@ -513,8 +512,7 @@ class Relation:
         
         startPoint = self.source.N
         endPoint = self.target.S
-        
-        # angle = math.degrees(math.atan2(endPoint[1] - startPoint[1], endPoint[0] - startPoint[0]))
+    
         angle = -90
         
         
