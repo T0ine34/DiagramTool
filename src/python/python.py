@@ -6,6 +6,7 @@ from gamuLogger import Logger, LEVELS
 
 Logger.setModule("PythonParser")
 
+UNKNOWN = "unknown"
 
 def dumpOnException(func):
     def wrapper(*args, **kwargs):
@@ -66,7 +67,7 @@ def getTypeComment(filepath : str, lineno : int) -> str:
             for t in ["# type: ", "#type:"]
             if t in line
         ),
-        "Unknown",
+        UNKNOWN,
     )
     
 def getTypeFromName(funcName : str) -> str:
@@ -96,7 +97,7 @@ def getTypeFromName(funcName : str) -> str:
         case "__ge__":
             return "bool"
         case _:
-            return "Unknown"
+            return UNKNOWN
 
 
 def PropertyType(node : ast.AST) -> str:
@@ -213,14 +214,14 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
     importedFiles = []
 
     def getType(lineno : int) -> str:
-        return getTypeComment(file, lineno) if file else "Unknown"
+        return getTypeComment(file, lineno) if file else UNKNOWN
     
     @dumpOnException
     def getReturnType(node : ast.FunctionDef) -> str:
-        result = getreturnString(node.returns) if node.returns else "unknown"
-        if result == "unknown":
+        result = getreturnString(node.returns) if node.returns else UNKNOWN
+        if result == UNKNOWN:
             result = getType(node.lineno-1)
-        if result == "unknown":
+        if result == UNKNOWN:
             result = getTypeFromName(node.name)
         return result
 
