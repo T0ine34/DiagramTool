@@ -68,6 +68,35 @@ def getTypeComment(filepath : str, lineno : int) -> str:
         ),
         "Unknown",
     )
+    
+def getTypeFromName(funcName : str) -> str:
+    match funcName:
+        case "__init__":
+            return ""
+        case "__str__":
+            return "str"
+        case "__repr__":
+            return "str"
+        case "__len__":
+            return "int"
+        case "__new__":
+            return ""
+        case "__del__":
+            return ""
+        case "__eq__":
+            return "bool"
+        case "__ne__":
+            return "bool"
+        case "__lt__":
+            return "bool"
+        case "__le__":
+            return "bool"
+        case "__gt__":
+            return "bool"
+        case "__ge__":
+            return "bool"
+        case _:
+            return "Unknown"
 
 
 def PropertyType(node : ast.AST) -> str:
@@ -185,9 +214,19 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
 
     def getType(lineno : int) -> str:
         return getTypeComment(file, lineno) if file else "Unknown"
+    
+    @dumpOnException
+    def getReturnType(node : ast.FunctionDef) -> str:
+        result = getreturnString(node.returns) if node.returns else "unknown"
+        if result == "unknown":
+            result = getType(node.lineno-1)
+        if result == "unknown":
+            result = getTypeFromName(node.name)
+        return result
 
     @dumpOnException
     def parseFunction(node : ast.FunctionDef, parentStack : list[str] = []) -> None:
+        
         for element in node.body:
             if isinstance(element, ast.FunctionDef):
                 parseFunction(element, parentStack + [str(node.name)])
@@ -195,7 +234,7 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
                 parseClassOrEnum(element, parentStack + [str(node.name)])
         result["functions"][".".join(parentStack + [str(node.name)])] = {
             "args": [arg.arg for arg in node.args.args],
-            "return_type": getreturnString(node.returns) if node.returns else getType(node.lineno-1),
+            "return_type": getReturnType(node)
         }
 
     @dumpOnException
@@ -215,7 +254,7 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
                     #it's a method
                     methods[".".join(parentStack + [str(node.name), str(element.name)])] = {
                         "args": [arg.arg for arg in element.args.args],
-                        "return_type": getreturnString(node.returns) if element.returns else getType(element.lineno-1),
+                        "return_type": getReturnType(element),
                         "isStatic": "staticmethod" in [decorator.id for decorator in node.decorator_list],
                         "visibility": "private" if element.name.startswith("__") else "protected" if element.name.startswith("_") else "public"
                     }
@@ -275,7 +314,7 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
                     #it's a method
                     methods[".".join(parentStack + [str(node.name), str(element.name)])] = {
                         "args": [arg.arg for arg in element.args.args],
-                        "return_type": "" if str(element.name) == "__init__" else getreturnString(element.returns) if element.returns else getType(element.lineno-1),
+                        "return_type": getReturnType(element),
                         "isStatic": "staticmethod" in [decorator.id for decorator in element.decorator_list],
                         "visibility": "private" if element.name.startswith("__") else "protected" if element.name.startswith("_") else "public"
                     }

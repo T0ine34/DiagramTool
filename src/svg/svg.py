@@ -2,11 +2,10 @@ import lxml.etree as ET
 
 try:
     from .customTypes import Class, Enum, Relation, Element
-    from.utils import createMissingClasses
 except ImportError:
     from customTypes import Class, Enum, Relation, Element
-    from utils import createMissingClasses
     
+from gamuLogger import Logger
     
 SPACE = 50
 
@@ -24,7 +23,6 @@ class SVG:
     def save(self, filename : str, showBorder : bool = False) -> None:
         with open(filename, "w") as file:
             file.write(self.toString(showBorder))
-        print(f"SVG generated in {filename}")
         
     def attrib(self, key, value) -> None:
         self.__tree.attrib[key] = value
@@ -40,8 +38,8 @@ class SVG:
             border = ET.Element("rect")
             border.attrib['x'] = "0"
             border.attrib['y'] = "0"
-            border.attrib['width'] = self.__tree.attrib['width']
-            border.attrib['height'] = self.__tree.attrib['height']
+            border.attrib['width'] = f"{width}"
+            border.attrib['height'] = f"{height}"
             border.attrib['fill'] = "none"
             border.attrib['stroke'] = "red"
             border.attrib['stroke-width'] = "1"
@@ -73,8 +71,24 @@ class SVG:
                 if bestX == -1:
                     obj.place(x, y)
                 
-                while any(obj.isOverlapping(other) for other in line if other != obj):
-                    obj.place(obj.x + SPACE, obj.y)
+                # while any(obj.isOverlapping(other) for other in line if other != obj):
+                #     obj.place(obj.x + SPACE, obj.y)
+                def getOverlapping():
+                    overlapping = None
+                    for other in line:
+                        if other == obj:
+                            continue
+                        if obj.isOverlapping(other):
+                            overlapping = other
+                            break
+                    return overlapping
+                
+                overlapping = getOverlapping()
+                while overlapping:
+                    obj.place(overlapping.E[0] + SPACE, obj.y)
+                    overlapping = getOverlapping()
+                
+                
                 
                 self.append(obj)
                 x += obj.width + SPACE

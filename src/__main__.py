@@ -78,6 +78,7 @@ def main():
         with open("ast.json", 'w') as f:
             import json
             json.dump(data, f, indent=4)
+        Logger.info("saved ast to ast.json")
     
     Logger.debug(f"parsed data: {data.keys()}")
 
@@ -86,6 +87,8 @@ def main():
         svg.save(args.output, showBorder=True)
     else:
         svg.save(args.output)
+    
+    Logger.info(f"saved diagram to {args.output}")
         
         
         

@@ -44,6 +44,13 @@ class Element:
         self.__x = x
         self.__y = y
         
+    def distanceTo(self, other : 'Element') -> float:
+        """return the distance between the 2 near sides of the elements"""
+        side1 = self.getNearSide(other.x, other.y)
+        side2 = other.getNearSide(self.x, self.y)
+        return ((side1[0] - side2[0])**2 + (side1[1] - side2[1])**2)**0.5
+        
+        
     def build(self) -> ET.Element:
 
         element = ET.Element("g")

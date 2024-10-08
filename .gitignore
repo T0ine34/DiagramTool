@@ -1,10 +1,8 @@
 *env/
-*.pdf
 *.log
-*.aux
 *.dump
 *.json
-resources/dynamic/
+*.svg
 dump/
 __pycache__/
 dist/
