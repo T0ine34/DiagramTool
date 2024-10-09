@@ -5,6 +5,7 @@ class Builder(BaseBuilder):
         self.addDirectory('src', 'src/diagramTool')
         self.addAndReplaceByPackageVersion('pyproject.toml')
         self.addFile('Readme.md')
+        self.addFile('example.svg')
         
         self.venv().install('build')
         
