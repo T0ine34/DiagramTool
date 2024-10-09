@@ -7,6 +7,7 @@ from . import createDiagram
 
 from gamuLogger import Logger
 
+Logger.setModule("DiagramTool")
 
 
 class LANGUAGES(Enum):
@@ -48,7 +49,6 @@ def getParser(language : LANGUAGES) -> Callable[[str, bool, bool], dict[str, str
 
 def fromSource(source : str, output : str, save_ast : bool = False, dump : bool = False, showBorder : bool = False):
     """entry point for the module"""
-    Logger.setModule("DiagramTool")
     
     language = getFileLanguage(source)
     Logger.debug(f"detected language: {language}")

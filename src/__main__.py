@@ -3,6 +3,8 @@ from .main import fromSource
 from gamuLogger import Logger, LEVELS
 import argparse
 
+Logger.setModule("DiagramTool")
+
 
 def buildArgParser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description='create a class diagram from source code')

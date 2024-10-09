@@ -2,7 +2,7 @@ from feanor import BaseBuilder
 
 class Builder(BaseBuilder):
     def Setup(self):
-        self.addDirectory('src', 'src/DiagramTool')
+        self.addDirectory('src', 'src/diagramTool')
         self.addAndReplaceByPackageVersion('pyproject.toml')
         self.addFile('Readme.md')
         
