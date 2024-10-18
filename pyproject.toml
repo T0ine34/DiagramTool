@@ -28,4 +28,4 @@ issues = "https://github.com/T0ine34/DiagramTool/issues"
 source = "https://github.com/T0ine34/DiagramTool"
 
 [project.scripts]
-DiagramTool = "DiagramTool.__main__:main"
+DiagramTool = "diagramTool.__main__:main"
