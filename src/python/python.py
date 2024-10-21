@@ -99,6 +99,17 @@ def getTypeFromName(funcName : str) -> str:
         case _:
             return UNKNOWN
 
+def getTypeFromConstant(node : ast.Constant) -> str:
+    if isinstance(node.value, str):
+        return "str"
+    elif isinstance(node.value, int):
+        return "int"
+    elif isinstance(node.value, float):
+        return "float"
+    elif isinstance(node.value, bool):
+        return "bool"
+    else:
+        return UNKNOWN
 
 def PropertyType(node : ast.AST) -> str:
     for decorator in node.decorator_list:
@@ -126,7 +137,7 @@ def mergeList(l1 : list, l2 : list) -> list:
     return l1
 
 
-PARSED_FILES = []
+PARSED_FILES = [] #type: list[str]
 
 
 def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dump : bool = False) -> dict[str, str]:
@@ -190,10 +201,13 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
     
     will recursively parse the given ast node and return a dict with the structure above
     """
+    # module name is each subdirectory of the file path, and the file name
+    moduleName = ".".join(file.split("/")[:-1] + [file.split("/")[-1].split(".")[0]])
     
+    Logger.debug(f"Parsing file '{file}'")
     if dump:
-        os.makedirs("dump", exist_ok=True)
-        dumpFilePath = f"dump/{os.path.basename(file)}.dump"
+        dumpFilePath = f"dump/{moduleName}.ast"
+        os.makedirs(os.path.dirname(dumpFilePath), exist_ok=True)
         with open(dumpFilePath, "w") as f:
             f.write(ast.dump(node, indent=4))
             Logger.info(f"Dumped file '{file}' to '{dumpFilePath}'")
@@ -215,7 +229,7 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
 
     def getType(lineno : int) -> str:
         return getTypeComment(file, lineno) if file else UNKNOWN
-    
+
     @dumpOnException
     def getReturnType(node : ast.FunctionDef) -> str:
         result = getreturnString(node.returns) if node.returns else UNKNOWN
@@ -227,7 +241,6 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
 
     @dumpOnException
     def parseFunction(node : ast.FunctionDef, parentStack : list[str] = []) -> None:
-        
         for element in node.body:
             if isinstance(element, ast.FunctionDef):
                 parseFunction(element, parentStack + [str(node.name)])
@@ -270,8 +283,8 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
             "methods": methods,
             "properties": properties
         }
-        
-    
+
+
     @dumpOnException
     def parseProperty(node : ast.FunctionDef, parentStack : list[str], properties : dict[str, dict[str, str]]) -> None:
         match PropertyType(node):
@@ -347,11 +360,16 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
     def parseGlobalVariables(node : ast.Assign) -> None:
         for target in node.targets:
             if isinstance(target, ast.Name):
-                result["globalVariables"][target.id] = getType(target.lineno-1)
+                _type = UNKNOWN
+                if isinstance(node.value, ast.Constant):
+                    _type = getTypeFromConstant(node.value)
+                if _type == UNKNOWN:
+                    _type = getType(target.lineno-1)
+                result["globalVariables"][target.id] = _type
 
     @dumpOnException
     def parseImport(node : ast.ImportFrom) -> None:
-        moduleName = node.module if node.module else ""
+        moduleName = node.module or ""
         backTimes = node.level
         if backTimes == 0:
             # the module is in the same directory, or it's a built-in module
@@ -363,16 +381,18 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
             path = Path(file).parent
             for _ in range(backTimes-1):
                 path = path.parent
-                
+
             moduleName = moduleName.replace('.', '/')
             if moduleName == "":
                 moduleName = "."
-                
+
             filepath = path / f"{moduleName}.py"
             if not filepath.exists():
                 filepath = path / f"{moduleName}/__init__.py"
             if not filepath.exists():
-                raise FileNotFoundError("files '" + str(path / f"{moduleName}.py") + "' and '" + str(path / f"{moduleName}/__init__.py") + "' not found")
+                raise FileNotFoundError(
+                    f"""files '{str(path / f"{moduleName}.py")}' and '{str(path / f"{moduleName}/__init__.py")}' not found"""
+                )
             importedFiles.append(str(filepath))
 
     for element in node.body:
@@ -384,12 +404,11 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
             parseClassOrEnum(element)
         elif isinstance(element, ast.Assign):
             parseGlobalVariables(element)
-            
+
     # search in all nodes for ImportFrom nodes
     for node in ast.walk(node):
         if isinstance(node, ast.ImportFrom):
             parseImport(node)
-
 
     if parseIncludedFiles:
         for file in importedFiles:
