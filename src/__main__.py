@@ -14,13 +14,13 @@ def buildArgParser() -> argparse.ArgumentParser:
     parser.add_argument('--debug', action='store_true', help='print debug information', default=False)
     parser.add_argument('--dump', action='store_true', help='dump parsed data to stdout', default=False)
     parser.add_argument('--save-ast', action='store_true', help='save ast to file', default=False)
+    parser.add_argument('--show-border', action='store_true', help='show border around the image', default=False)
     return parser
 
 
 def getArgs() -> argparse.Namespace:
     parser = buildArgParser()
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 def main():
     args = getArgs()
@@ -28,7 +28,7 @@ def main():
         Logger.setLevel('stdout', LEVELS.DEBUG)
     
     try:
-        fromSource(args.source, args.output, args.save_ast, args.dump, args.debug)
+        fromSource(args.source, args.output, args.save_ast, args.dump, args.show_border)
     except Exception as e:
         Logger.critical(f"An error occured: {e}\n{traceback.format_exc()}")
         exit(1)
