@@ -2,6 +2,7 @@ from .main import fromSource
 
 from gamuLogger import Logger, LEVELS
 import argparse
+import traceback
 
 Logger.setModule("DiagramTool")
 
@@ -29,7 +30,7 @@ def main():
     try:
         fromSource(args.source, args.output, args.save_ast, args.dump, args.debug)
     except Exception as e:
-        Logger.critical(f"An error occured")
+        Logger.critical(f"An error occured: {e}\n{traceback.format_exc()}")
         exit(1)
     
     
