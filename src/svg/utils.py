@@ -1,14 +1,18 @@
 import lxml.etree as ET
 
+from gamuLogger import Logger
+
+Logger.setModule("SVG_Utils")
+
 
 def getTextWidth(text : str, fontsize : int) -> int:
-    return len(text) * 10 * (fontsize / 16)
+    return len(text) * 10 * (fontsize // 16)
 
 def getTextHeight(fontsize : int) -> int:
     return fontsize + 5
 
 
-def visibiliyToTeX(visibility : str):
+def visibiliyToUML(visibility : str):
     if visibility == "private":
         return "–"
     elif visibility == "protected":
@@ -17,13 +21,18 @@ def visibiliyToTeX(visibility : str):
         return "+"
     else:
         return "?"
+    
+def Arg2Text(arg : dict) -> str:
+    return f"{arg['name']} : {arg['type']}"
 
+def Args2Text(args : list) -> str:
+    return ", ".join([Arg2Text(arg) for arg in args])
 
 def Attribute2Text(name, attribute : dict) -> str:
-    return f"{visibiliyToTeX(attribute['visibility'])} {name.split('.')[-1]} : {attribute['type']}"
+    return f"{visibiliyToUML(attribute['visibility'])} {name.split('.')[-1]} : {attribute['type']}"
 
 def Method2Text(name, method : dict) -> str:
-    return f"{visibiliyToTeX(method['visibility'])} {name.split('.')[-1]}({', '.join(method['args'])}) : {method['return_type']}"
+    return f"{visibiliyToUML(method['visibility'])} {name.split('.')[-1]}({Args2Text(method['args'])}) : {method['return_type']}"
 
 
 def createMissingClasses(data : dict) -> None:
@@ -63,11 +72,11 @@ if __name__ == "__main__":
     def createTextElement(text : str, x : int, y : int, fontsize : int) -> str:
         # sourcery skip: extract-duplicate-method
         # return f'<text transform="translate({x} {y})" text-anchor="middle" font-size="{fontsize}px" font-family="monospace">{text}</text>'
-        G = ET.Element("g")
+        G = ET.Element("g", None, None)
         G.attrib["transform"] = f"translate({x} {y})"
         G.attrib['color'] = "white"
 
-        textElement = ET.Element("text")
+        textElement = ET.Element("text", None, None)
         textElement.text = text
         textElement.attrib["text-anchor"] = "middle"
         textElement.attrib["font-size"] = f"{fontsize}px"
@@ -77,7 +86,7 @@ if __name__ == "__main__":
         textElement.attrib["fill"] = "currentColor"
         G.append(textElement)
         
-        border = ET.Element("rect")
+        border = ET.Element("rect", None, None)
         border.attrib["x"] = "0"
         border.attrib["y"] = "0"
         border.attrib["width"] = f"{getTextWidth(text, fontsize)}"

@@ -1,11 +1,11 @@
 try:
     from .svg import SVG
     from .utils import createMissingClasses
-    from .customTypes import Class, Enum, Relation, Element
+    from .customTypes import Class, _Enum, Relation, Element
 except ImportError:
     from svg import SVG
     from utils import createMissingClasses
-    from customTypes import Class, Enum, Relation, Element
+    from customTypes import Class, _Enum, Relation, Element
 
 
 def createDiagram(data) -> SVG:
@@ -15,7 +15,7 @@ def createDiagram(data) -> SVG:
         Class.fromDict(key, value) for key, value in data['classes'].items()
     ]
     objects.extend(
-        Enum.fromDict(key, value) for key, value in data['enums'].items()
+        _Enum.fromDict(key, value) for key, value in data['enums'].items() #type: ignore
     )
     svg = SVG()
 

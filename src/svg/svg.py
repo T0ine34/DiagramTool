@@ -1,5 +1,7 @@
 import lxml.etree as ET
 
+from typing import Sequence
+
 try:
     from .customTypes import Class, Enum, Relation, Element
 except ImportError:
@@ -11,7 +13,7 @@ SPACE = 50
 
 class SVG:
     def __init__(self) -> None:
-        self.__tree = ET.Element("svg")
+        self.__tree = ET.Element("svg", None, None)
         self.__tree.attrib['xmlns'] = "http://www.w3.org/2000/svg"
         self.__objects = []
 
@@ -35,18 +37,10 @@ class SVG:
         self.attrib('height', f"{height}")
         
         if showBorder:
-            border = ET.Element("rect")
-            border.attrib['x'] = "0"
-            border.attrib['y'] = "0"
-            border.attrib['width'] = f"{width}"
-            border.attrib['height'] = f"{height}"
-            border.attrib['fill'] = "none"
-            border.attrib['stroke'] = "red"
-            border.attrib['stroke-width'] = "1"
-            self.__tree.append(border)
-        return ET.tostring(self.__tree, pretty_print=True).decode("utf-8")
+            self.drawBorder(width, height)
+        return ET.tostring(self.__tree, pretty_print=True).decode("utf-8") #type: ignore
 
-    def placeObjects(self, objects : list[Element]) -> None:
+    def placeObjects(self, objects : Sequence[Element]) -> None:
         
         #place classes
         nbLines = max([1] + [obj.getInheritanceTreeSize() for obj in objects if isinstance(obj, Class)])
@@ -103,7 +97,7 @@ class SVG:
             x += obj.width + 30
         
             
-    def placeRelations(self, objects : list[Element], data : dict) -> None:
+    def placeRelations(self, objects : Sequence[Element], data : dict) -> None:
         for sourceName, sourceData in data['classes'].items():
             source = next(obj for obj in objects if obj.name == sourceName)
             for targetName in sourceData['inheritFrom']:
@@ -111,3 +105,14 @@ class SVG:
                 relation = Relation(source, target, Relation.TYPE.INHERITANCE)
                 self.append(relation)
 
+
+    def drawBorder(self, width : int, height : int) -> None:
+        border = ET.Element("rect", None, None)
+        border.attrib['x'] = "0"
+        border.attrib['y'] = "0"
+        border.attrib['width'] = f"{width}"
+        border.attrib['height'] = f"{height}"
+        border.attrib['fill'] = "none"
+        border.attrib['stroke'] = "red"
+        border.attrib['stroke-width'] = "1"
+        self.__tree.append(border)

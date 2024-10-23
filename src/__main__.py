@@ -2,10 +2,24 @@ from .main import fromSource
 
 from gamuLogger import Logger, LEVELS
 import argparse
+import time
 import traceback
 
 Logger.setModule("DiagramTool")
 
+class Chronometer:
+    def __init__(self):
+        self.__delta = 0.0
+        
+    def __enter__(self):
+        self.__start = time.time()
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self.__delta = time.time() - self.__start
+        
+    def get(self) -> float:
+        return self.__delta
 
 def buildArgParser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description='create a class diagram from source code')
@@ -27,12 +41,15 @@ def main():
     if args.debug:
         Logger.setLevel('stdout', LEVELS.DEBUG)
     
+    chrono = Chronometer()
     try:
-        fromSource(args.source, args.output, args.save_ast, args.dump, args.show_border)
+        with chrono:
+            fromSource(args.source, args.output, args.save_ast, args.dump, args.show_border)
     except Exception as e:
         Logger.critical(f"An error occured: {e}\n{traceback.format_exc()}")
         exit(1)
-    
+    else:
+        Logger.info(f"Diagram created in {round(chrono.get(), 2)}s")
     
 if __name__ == "__main__":
     main()

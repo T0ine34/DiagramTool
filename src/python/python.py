@@ -1,6 +1,7 @@
 import ast
 from pathlib import Path
 import os
+from typing import Any, Union
 
 from gamuLogger import Logger, LEVELS
 
@@ -14,7 +15,10 @@ def dumpOnException(func):
             return func(*args, **kwargs)
         except Exception as e:
             Logger.error(f"An error occurred in function {func.__name__} : {e}")
-            Logger.info(ast.dump(args[0], indent=4))
+            try:
+                Logger.info(ast.dump(args[0], indent=4))
+            except Exception as le:
+                Logger.error(f"Could not dump the ast node : {le}")
             raise e
     return wrapper
 
@@ -24,33 +28,25 @@ def getTree(file) -> ast.Module:
         return ast.parse(file.read())
     
 
-@dumpOnException
-def getreturnStringAttr(node : ast.Attribute) -> str:
-    if isinstance(node.value, ast.Attribute):
-        return f"{getreturnStringAttr(node.value)}.{node.attr}"
-    return f"{node.value.id}.{node.attr}"
-
-
-@dumpOnException
-def getReturnStringConst(node : ast.Constant) -> str:
-    return str(node.value)
-
 
 @dumpOnException
 def getreturnString(node : ast.AST) -> str:
     if isinstance(node, ast.Attribute):
-        return getreturnStringAttr(node)
+        return f"{getreturnString(node.value)}.{node.attr}"
+    
     elif isinstance(node, ast.Constant):
-        return getReturnStringConst(node)
+        return str(node.value)
     elif isinstance(node, ast.Name):
         return node.id
     elif isinstance(node, ast.Subscript):
-        return f"{getreturnString(node.value)}[{', '.join(getreturnString(elts) for elts in node.slice.elts)}]"
+        return f"{getreturnString(node.value)}[{getreturnString(node.slice)}]"
+        
     elif isinstance(node, ast.List):
         return f"[{', '.join(getreturnString(elt) for elt in node.elts)}]"
     elif isinstance(node, ast.Tuple):
         return f"({', '.join(getreturnString(elt) for elt in node.elts)})"
-        
+    else:
+        return UNKNOWN
     
     
 def getTypeComment(filepath : str, lineno : int) -> str:
@@ -110,8 +106,25 @@ def getTypeFromConstant(node : ast.Constant) -> str:
         return "bool"
     else:
         return UNKNOWN
+    
+
+@dumpOnException
+def parseFunctionArgs(node : ast.FunctionDef) -> list[dict[str, str]]:
+    result = [] #type: list[dict[str, str]]
+    for arg in node.args.args:
+        argDict = {
+            "name": arg.arg,
+            "type": UNKNOWN
+        }
+        if arg.annotation:
+            argDict["type"] = getreturnString(arg.annotation)
+        result.append(argDict)
+    return result
+
 
 def PropertyType(node : ast.AST) -> str:
+    if not isinstance(node, ast.FunctionDef):
+        return ""
     for decorator in node.decorator_list:
         if isinstance(decorator, ast.Name) and decorator.id == "property":
             return "r"
@@ -140,7 +153,72 @@ def mergeList(l1 : list, l2 : list) -> list:
 PARSED_FILES = [] #type: list[str]
 
 
-def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dump : bool = False) -> dict[str, str]:
+
+def getAllClasses(node : ast.AST, file : str, parseIncludedFiles : bool = False) -> list[str]:
+    classes = []
+    importedFiles = []
+    
+    if file in PARSED_FILES:
+        raise ValueError(f"File {file} already parsed")
+    PARSED_FILES.append(file)
+    
+    Logger.debug(f"Getting all classes in file '{file}'")    
+    
+    def parseNode(node : ast.AST, parents : str = "") -> None:
+        if isinstance(node, ast.ImportFrom):
+            parseImportFrom(node)
+            return
+        if isinstance(node, ast.ClassDef):
+            classes.append(f"{parents}.{node.name}" if parents else node.name)
+        
+        if "body" in dir(node):
+            for element in node.body: # type: ignore
+                parseNode(element, f"{parents}.{node.name}" if isinstance(node, ast.ClassDef) else parents)
+
+    def parseImportFrom(node : ast.ImportFrom) -> None:
+        moduleName = node.module or ""
+        backTimes = node.level
+        if backTimes == 0:
+            # the module is in the same directory, or it's a built-in module
+            path = Path(file).parent / f"{moduleName}.py"
+            if path.exists():
+                importedFiles.append(str(path))
+        else:
+            # the module is in a parent directory
+            path = Path(file).parent
+            for _ in range(backTimes-1):
+                path = path.parent
+
+            moduleName = moduleName.replace('.', '/')
+            if moduleName == "":
+                moduleName = "."
+
+            filepath = path / f"{moduleName}.py"
+            if not filepath.exists():
+                filepath = path / f"{moduleName}/__init__.py"
+            if not filepath.exists():
+                raise FileNotFoundError(
+                    f"""files '{str(path / f"{moduleName}.py")}' and '{str(path / f"{moduleName}/__init__.py")}' not found"""
+                )
+            importedFiles.append(str(filepath))
+
+
+    for element in node.body: # type: ignore
+        parseNode(element)
+
+    if parseIncludedFiles:
+        for file in importedFiles:
+            if file in PARSED_FILES:
+                continue
+            tree = getTree(file)
+            parsed = getAllClasses(tree, file, True)
+            classes += parsed
+
+    return classes
+
+
+
+def parseTree(node : ast.AST, file : str, classes : list[str], parseIncludedFiles : bool = False, dump : bool = False) -> dict[str, Any]:
     """return a dict like:
     ```python
     {
@@ -148,7 +226,10 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
             "ClassName": {
                 "methods": {
                     "MethodName": {
-                        "args": ["arg1", "arg2"],
+                        "args": [
+                            {"name": "arg1", "type": "str"},
+                            {"name": "arg2", "type": "int"}
+                            ],
                         "return_type": "str",
                         "isStatic": False,
                         "visibility": "public" # public, private, protected
@@ -186,7 +267,10 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
         },
         "functions": {
             "FunctionName": {
-                "args": ["arg1", "arg2"],
+                "args": [
+                    {"name": "arg1", "type": "str"},
+                    {"name": "arg2", "type": "int"}
+                    ],
                 "return_type": "str"
             },
             "FunctionName.FunctionName2": { # nested function
@@ -223,7 +307,7 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
         "enums": {},
         "functions": {},
         "globalVariables": {}
-    }
+    }    
 
     importedFiles = []
 
@@ -247,7 +331,7 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
             elif isinstance(element, ast.ClassDef):
                 parseClassOrEnum(element, parentStack + [str(node.name)])
         result["functions"][".".join(parentStack + [str(node.name)])] = {
-            "args": [arg.arg for arg in node.args.args],
+            "args": parseFunctionArgs(node),
             "return_type": getReturnType(node)
         }
 
@@ -259,17 +343,17 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
         for element in node.body:
             if isinstance(element, ast.FunctionDef):
                 # if the method has the decorator @property, then it's a property
-                if "property" in [decorator.id for decorator in element.decorator_list]:
+                if "property" in [decorator.id for decorator in element.decorator_list]:  #type: ignore
                     properties[".".join(parentStack + [str(node.name), str(element.name)])] = {
-                        "type": getreturnString(node.returns) if element.returns else getType(element.lineno-1),
+                        "type": getreturnString(node.returns) if element.returns else getType(element.lineno-1), #type: ignore
                         "visibility": "private" if element.name.startswith("__") else "protected" if element.name.startswith("_") else "public"
                     }
                 else:
                     #it's a method
                     methods[".".join(parentStack + [str(node.name), str(element.name)])] = {
-                        "args": [arg.arg for arg in element.args.args],
+                        "args": parseFunctionArgs(element),
                         "return_type": getReturnType(element),
-                        "isStatic": "staticmethod" in [decorator.id for decorator in node.decorator_list],
+                        "isStatic": "staticmethod" in [decorator.id for decorator in node.decorator_list], #type: ignore
                         "visibility": "private" if element.name.startswith("__") else "protected" if element.name.startswith("_") else "public"
                     }
             elif isinstance(element, ast.Assign):
@@ -312,6 +396,28 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
                     }
             case _:
                 return
+            
+            
+    @dumpOnException
+    def containType(node : ast.AST, _type : str) -> bool:
+        Logger.debug(f"Checking if {ast.dump(node)} contains type {_type}")
+        if isinstance(node, ast.Name):
+            return node.id == _type
+        elif isinstance(node, ast.Attribute):
+            return containType(node.value, _type)
+        elif isinstance(node, ast.Subscript):
+            return containType(node.value, _type)
+        elif isinstance(node, ast.Call):
+            return any(containType(arg, _type) for arg in node.args)
+        elif isinstance(node, ast.List):
+            return any(containType(elt, _type) for elt in node.elts)
+        elif isinstance(node, ast.Tuple):
+            return any(containType(elt, _type) for elt in node.elts)
+        elif isinstance(node, ast.Constant):
+            return node.value == _type
+        else:
+            Logger.warning(f"Unknown type {ast.dump(node)}")
+            return False
 
     @dumpOnException
     def parseClass(node : ast.ClassDef, parentStack : list[str] = []) -> None:
@@ -319,6 +425,9 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
         methods = {}
         attributes = {}
         properties = {}
+        aggregate = set() # for nested classes that are not created and destroyed with the parent class, but are used in the parent class
+                       # such objects are passed to the parent class in the constructor or in a method
+        composite = set() # for nested classes that are created and destroyed with the parent class
         for element in node.body:
             if isinstance(element, ast.FunctionDef):
                 # if the method has the decorator @property, then it's a property
@@ -327,11 +436,27 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
                 else:
                     #it's a method
                     methods[".".join(parentStack + [str(node.name), str(element.name)])] = {
-                        "args": [arg.arg for arg in element.args.args],
-                        "return_type": getReturnType(element),
-                        "isStatic": "staticmethod" in [decorator.id for decorator in element.decorator_list],
+                        "args": parseFunctionArgs(element),
+                        "return_type": "" if element.name == "__init__" else getReturnType(element),
+                        "isStatic": "staticmethod" in [decorator.id for decorator in element.decorator_list], #type: ignore
                         "visibility": "private" if element.name.startswith("__") else "protected" if element.name.startswith("_") else "public"
                     }
+                    # parse arguments types to find aggregate classes
+                    # there are three cases:
+                    # 1. the argument is a class that is defined inside the current class (it's name is relative to the current class) ex: TYPE
+                    # 2. the argument is a class that is defined elsewhere (it's name is absolute) ex : relation.TYPE
+                    # 3. the argument is a built-in type or is defined in a external module : in this case, ignore it
+                    for arg in element.args.args:
+                        if arg.arg == "self":
+                            continue
+                        if "annotation" in dir(arg) and arg.annotation and any(containType(arg.annotation, _type) for _type in classes):
+                            argType = getreturnString(arg.annotation)
+                            Logger.debug(f"Aggregate class {argType} found in method {element.name} of class {node.name}")
+                            
+                            aggregate.add(argType)
+                                
+                            
+                    
             elif isinstance(element, ast.ClassDef):
                 parseClassOrEnum(element, parentStack + [str(node.name)])
             elif isinstance(element, ast.Assign):
@@ -344,8 +469,10 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
         result["classes"][".".join(parentStack + [str(node.name)])] = {
             "methods": methods,
             "attributes": attributes,
-            "inheritFrom": [base.id for base in node.bases],
-            "properties": properties
+            "inheritFrom": [getreturnString(base) for base in node.bases], #type: ignore
+            "properties": properties,
+            "aggregate": list(aggregate),
+            "composite": list(composite)
         }
 
     def parseClassOrEnum(node : ast.ClassDef, parentStack : list[str] = []) -> None:
@@ -395,7 +522,7 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
                 )
             importedFiles.append(str(filepath))
 
-    for element in node.body:
+    for element in node.body: # type: ignore
         # if isinstance(element, ast.ImportFrom):
         #     parseImport(element)
         if isinstance(element, ast.FunctionDef):
@@ -415,15 +542,17 @@ def parseTree(node : ast.AST, file : str, parseIncludedFiles : bool = False, dum
             if file in PARSED_FILES:
                 continue
             tree = getTree(file)
-            parsed = parseTree(tree, file, True, dump)
+            parsed = parseTree(tree, file, classes, True, dump)
             result = merge(result, parsed)
 
-    return result
+    return result 
     
         
 def parse(filename : str, parseIncludedFiles : bool = False, dump : bool = False) -> dict[str, str]:
     tree = getTree(filename)
-    return parseTree(tree, filename, parseIncludedFiles, dump)
+    classes = getAllClasses(tree, filename, parseIncludedFiles)
+    PARSED_FILES.clear() # clear the list of parsed files
+    return parseTree(tree, filename, classes, parseIncludedFiles, dump)
 
 
 if __name__ == "__main__":

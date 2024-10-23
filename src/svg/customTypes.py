@@ -1,19 +1,21 @@
 # import xml.etree.ElementTree as ET
+import itertools
 import lxml.etree as ET
+import xml.etree.ElementTree as ETX
 from enum import Enum
 
 try:
     from .utils import getTextWidth, getTextHeight, Attribute2Text, Method2Text
 except ImportError:
     from utils import getTextWidth, getTextHeight, Attribute2Text, Method2Text
-    
+
 COLOR = "black"
 TITLE_FONT_SIZE = 26
 ATTRIBUTE_FONT_SIZE = 20
 SEPARATOR_HEIGHT = 20
 
-def Separator(x : int, y : int, width : int, color : str = 'black') -> ET.Element:   
-    separator = ET.Element("line")
+def Separator(x : int, y : int, width : int, color : str = 'black') -> ETX.Element:   
+    separator = ET.Element("line", None, None)
     separator.attrib["x1"] = "0"
     separator.attrib["y1"] = "0"
     separator.attrib["x2"] = f"{width}"
@@ -22,7 +24,7 @@ def Separator(x : int, y : int, width : int, color : str = 'black') -> ET.Elemen
     separator.attrib["stroke-width"] = "1"
     separator.attrib["transform"] = f"translate({x} {y})"
     
-    return separator
+    return separator #type: ignore
 
 
 
@@ -51,13 +53,13 @@ class Element:
         return ((side1[0] - side2[0])**2 + (side1[1] - side2[1])**2)**0.5
         
         
-    def build(self) -> ET.Element:
+    def build(self) -> ETX.Element:
 
-        element = ET.Element("g")
+        element = ET.Element("g", None, None)
         element.attrib["class"] = "element"
         element.attrib["id"] = self.name
         
-        return element
+        return element #type: ignore
     
     @property
     def placed(self) -> bool:
@@ -86,22 +88,22 @@ class Element:
     @property
     def N(self) -> tuple[int, int]:
         """North center"""
-        return (self.__x + self._width/2, self.__y)
+        return (self.__x + self._width//2, self.__y)
     
     @property
     def S(self) -> tuple[int, int]:
         """South center"""
-        return (self.__x + self._width/2, self.__y + self._height)
+        return (self.__x + self._width//2, self.__y + self._height)
     
     @property
     def W(self) -> tuple[int, int]:
         """West center"""
-        return (self.__x, self.__y + self._height/2)
+        return (self.__x, self.__y + self._height//2)
     
     @property
     def E(self) -> tuple[int, int]:
         """East center"""
-        return (self.__x + self._width, self.__y + self._height/2)
+        return (self.__x + self._width, self.__y + self._height//2)
 
 
     @property
@@ -123,9 +125,9 @@ class Element:
 
     @property
     def center(self) -> tuple[int, int]:
-        return (self.__x + self._width/2, self.__y + self._height/2)
+        return (self.__x + self._width//2, self.__y + self._height//2)
 
-    def getNearSide(self, x : int, y : int) -> float:
+    def getNearSide(self, x : int, y : int) -> tuple[int, int]:
         distance = {
             self.N : ((self.N[0] - x)**2 + (self.N[1] - y)**2),
             self.S : ((self.S[0] - x)**2 + (self.S[1] - y)**2),
@@ -133,17 +135,20 @@ class Element:
             self.E : ((self.E[0] - x)**2 + (self.E[1] - y)**2)
         }
         
-        return min(distance, key=distance.get)
+        return min(distance, key=distance.get) #type: ignore
 
     def isOverlapping(self, other : 'Element') -> bool:
         if not self.placed or not other.placed:
             return False
         # check if some point of self is inside other
-        for x in range( int(self.__x),  int(self.__x + self._width), 10):
-            for y in range( int(self.__y),  int(self.__y + self._height), 10):
-                if other.__x <= x <= other.__x + other._width and other.__y <= y <= other.__y + other._height:
-                    return True
-        return False
+        return any(
+            other.__x <= x <= other.__x + other._width
+            and other.__y <= y <= other.__y + other._height
+            for x, y in itertools.product(
+                range(int(self.__x), int(self.__x + self._width), 10),
+                range(int(self.__y), int(self.__y + self._height), 10),
+            )
+        )
 
 class Class(Element):
     __instances = {} # type: dict[str, Class]
@@ -200,7 +205,7 @@ class Class(Element):
                 size += cls.__reqGetInheritanceTreeSize()
         return size
     
-    def build(self) -> ET.Element:   
+    def build(self) -> ETX.Element:   
         G = super().build()
              
         # group
@@ -211,7 +216,7 @@ class Class(Element):
         G.attrib['transform'] = f"translate({self.x} {self.y})"
         
         # border
-        border = ET.Element("rect")
+        border = ET.Element("rect", None, None)
         border.attrib["class"] = "border"
         border.attrib["x"] = "0"
         border.attrib["y"] = "0"
@@ -220,12 +225,12 @@ class Class(Element):
         border.attrib['stroke-width'] = "1"
         border.attrib['fill'] = "none"
         border.attrib['stroke'] = "currentColor"
-        G.append(border)
+        G.append(border) #type: ignore
         
         y = 0
         
         # class name
-        className = ET.Element("text")
+        className = ET.Element("text", None, None)
         className.text = self.name
         className.attrib["class"] = "className"
         className.attrib['transform'] = f"translate({self._width/2}, {ATTRIBUTE_FONT_SIZE + 5})"
@@ -236,7 +241,7 @@ class Class(Element):
         className.attrib['stroke'] = "none"
         className.attrib['font-size'] = f"{TITLE_FONT_SIZE}px"
         
-        G.append(className)
+        G.append(className) #type: ignore
         y += getTextHeight(TITLE_FONT_SIZE) + 5
         
         # separator
@@ -245,7 +250,7 @@ class Class(Element):
         
         # attributes
         for key, value in self.attributes.items():
-            attribute = ET.Element("text")
+            attribute = ET.Element("text", None, None)
             attribute.text = Attribute2Text(key, value)
             attribute.attrib["class"] = "attribute"
             attribute.attrib['transform'] = f"translate(5, {y})"
@@ -254,12 +259,12 @@ class Class(Element):
             attribute.attrib['font-size'] = f"{ATTRIBUTE_FONT_SIZE}px"
             attribute.attrib['fill'] = "currentColor"
             attribute.attrib['stroke'] = "none"
-            G.append(attribute)
+            G.append(attribute) #type: ignore
             y += getTextHeight(ATTRIBUTE_FONT_SIZE)
             
         # properties
         for key, value in self.properties.items():
-            _property = ET.Element("text")
+            _property = ET.Element("text", None, None)
             _property.text = Attribute2Text(key, value)
             _property.attrib["class"] = "property"
             _property.attrib['transform'] = f"translate(5, {y})"
@@ -268,7 +273,7 @@ class Class(Element):
             _property.attrib['font-size'] = f"{ATTRIBUTE_FONT_SIZE}px"
             _property.attrib['fill'] = "currentColor"
             _property.attrib['stroke'] = "none"
-            G.append(_property)
+            G.append(_property) #type: ignore
             y += getTextHeight(ATTRIBUTE_FONT_SIZE)
             
         # separator
@@ -277,7 +282,7 @@ class Class(Element):
         
         # methods
         for key, value in self.methods.items():
-            method = ET.Element("text")
+            method = ET.Element("text", None, None)
             method.text = Method2Text(key, value)
             method.attrib["class"] = "method"
             method.attrib['transform'] = f"translate(5, {y})"
@@ -286,7 +291,7 @@ class Class(Element):
             method.attrib['font-size'] = f"{ATTRIBUTE_FONT_SIZE}px"
             method.attrib['fill'] = "currentColor"
             method.attrib['stroke'] = "none"
-            G.append(method)
+            G.append(method) #type: ignore
             y += getTextHeight(ATTRIBUTE_FONT_SIZE)
         
         
@@ -298,7 +303,7 @@ class Class(Element):
         best = sum(Class.__instances[parent].S[0] for parent in self.inheritFrom) // len(self.inheritFrom)
         return best - self._width // 2
         
-class Enum(Element):
+class _Enum(Element):
     def __init__(self, name : str, values : list, methods : dict):
         super().__init__(name)
         self.values = values
@@ -328,7 +333,7 @@ class Enum(Element):
     def fromDict(name : str, enumDict : dict) -> 'Enum':
         return Enum(name, enumDict['values'], enumDict['methods'])
     
-    def build(self) -> ET.Element:
+    def build(self) -> ETX.Element:
         G = super().build()
     
         # group
@@ -339,7 +344,7 @@ class Enum(Element):
         G.attrib['transform'] = f"translate({self.x} {self.y})"
         
         # border
-        border = ET.Element("rect")
+        border = ET.Element("rect", None, None)
         border.attrib["class"] = "border"
         border.attrib["x"] = "0"
         border.attrib["y"] = "0"
@@ -348,12 +353,12 @@ class Enum(Element):
         border.attrib['stroke-width'] = "1"
         border.attrib['fill'] = "none"
         border.attrib['stroke'] = "currentColor"
-        G.append(border)
+        G.append(border) #type: ignore
         
         y = 0
         
         # <<enumeration>>
-        enumSurTitle = ET.Element("text")
+        enumSurTitle = ET.Element("text", None, None)
         enumSurTitle.text = "<<enumeration>>"
         enumSurTitle.attrib["class"] = "enumSurTitle"
         enumSurTitle.attrib['transform'] = f"translate({self._width/2}, {ATTRIBUTE_FONT_SIZE + 5})"
@@ -365,11 +370,11 @@ class Enum(Element):
         enumSurTitle.attrib['font-size'] = f"{ATTRIBUTE_FONT_SIZE}px"
         enumSurTitle.attrib['font-style'] = "italic"
         
-        G.append(enumSurTitle)
+        G.append(enumSurTitle) #type: ignore
         y += getTextHeight(ATTRIBUTE_FONT_SIZE) + 5
         
         # name
-        enumName = ET.Element("text")
+        enumName = ET.Element("text", None, None)
         enumName.text = self.name
         enumName.attrib["class"] = "enumName"
         enumName.attrib['transform'] = f"translate({self._width/2}, {ATTRIBUTE_FONT_SIZE + 5})"
@@ -380,7 +385,7 @@ class Enum(Element):
         enumName.attrib['stroke'] = "none"
         enumName.attrib['font-size'] = f"{TITLE_FONT_SIZE}px"
         
-        G.append(enumName)
+        G.append(enumName) #type: ignore
         y += getTextHeight(TITLE_FONT_SIZE) + 5
         
         # separator
@@ -389,7 +394,7 @@ class Enum(Element):
         
         # values
         for value in self.values:
-            valueElement = ET.Element("text")
+            valueElement = ET.Element("text", None, None)
             valueElement.text = value
             valueElement.attrib["class"] = "value"
             valueElement.attrib['transform'] = f"translate(5, {y})"
@@ -398,7 +403,7 @@ class Enum(Element):
             valueElement.attrib['font-size'] = f"{ATTRIBUTE_FONT_SIZE}px"
             valueElement.attrib['fill'] = "currentColor"
             valueElement.attrib['stroke'] = "none"
-            G.append(valueElement)
+            G.append(valueElement) #type: ignore
             y += getTextHeight(ATTRIBUTE_FONT_SIZE)
             
         # separator
@@ -407,7 +412,7 @@ class Enum(Element):
         
         # methods
         for key, value in self.methods.items():
-            method = ET.Element("text")
+            method = ET.Element("text", None, None)
             method.text = Method2Text(key, value)
             method.attrib["class"] = "method"
             method.attrib['transform'] = f"translate(5, {y})"
@@ -416,7 +421,7 @@ class Enum(Element):
             method.attrib['font-size'] = f"{ATTRIBUTE_FONT_SIZE}px"
             method.attrib['fill'] = "currentColor"
             method.attrib['stroke'] = "none"
-            G.append(method)
+            G.append(method) #type: ignore
             y += getTextHeight(ATTRIBUTE_FONT_SIZE)
             
         return G
@@ -433,15 +438,15 @@ class ARROW_TYPE(Enum):
 def Arrow(position : tuple[int, int], angle : float, arrowType : ARROW_TYPE, filled : bool):
     match arrowType:
         case ARROW_TYPE.DIAMOND:
-            arrow = ET.Element("polygon")
+            arrow = ET.Element("polygon", None, None)
             arrow.attrib["points"] = f"{position[0]-5},{position[1]-5} {position[0]+5},{position[1]} {position[0]-5},{position[1]+5} {position[0]-15},{position[1]}"
             arrow.attrib["fill"] = "currentColor" if filled else "none"
         case ARROW_TYPE.TRIANGLE:
-            arrow = ET.Element("polygon")
+            arrow = ET.Element("polygon", None, None)
             arrow.attrib["points"] = f"{position[0]-5},{position[1]-5} {position[0]+5},{position[1]} {position[0]-5},{position[1]+5}"
             arrow.attrib["fill"] = "currentColor" if filled else "none"
         case ARROW_TYPE.OPEN_TRIANGLE:
-            arrow = ET.Element("polyline")
+            arrow = ET.Element("polyline", None, None)
             arrow.attrib["points"] = f"{position[0]-5},{position[1]-5} {position[0]+5},{position[1]} {position[0]-5},{position[1]+5}"
             arrow.attrib["fill"] = "none"
             if filled:
@@ -461,7 +466,7 @@ class LINE_TYPE(Enum):
     DASHED = 1
     
 def Line(start : tuple[int, int], end : tuple[int, int], lineType : LINE_TYPE):
-    line = ET.Element("line")
+    line = ET.Element("line", None, None)
     line.attrib["x1"] = f"{start[0]}"
     line.attrib["y1"] = f"{start[1]}"
     line.attrib["x2"] = f"{end[0]}"
@@ -481,7 +486,7 @@ def Line(start : tuple[int, int], end : tuple[int, int], lineType : LINE_TYPE):
 
 
 def GeomLine(start : tuple[int, int], end : tuple[int, int], lineType : LINE_TYPE):
-    G = ET.Element("g")
+    G = ET.Element("g", None, None)
     G.attrib["class"] = "relation"
     
     if start[0] == end[0]:
@@ -513,8 +518,8 @@ class Relation:
         self.target = target
         self.relationType = relationType
         
-    def build(self) -> ET.Element:
-        G = ET.Element("g")
+    def build(self) -> ETX.Element:
+        G = ET.Element("g", None, None)
         G.attrib["class"] = "relation"
         
         startPoint = self.source.N
@@ -551,5 +556,5 @@ class Relation:
             case _:
                 raise ValueError("Invalid relation type")
 
-        return G
+        return G #type: ignore
 
