@@ -1,7 +1,8 @@
 import ast
 from pathlib import Path
 import os
-from typing import Any, Union
+from re import A
+from typing import Any, List
 
 from gamuLogger import Logger, LEVELS
 
@@ -311,6 +312,24 @@ def parseTree(node : ast.AST, file : str, classes : list[str], parseIncludedFile
     }    
 
     importedFiles = []
+    
+    def getArgTypes(node : ast.AST) -> set[str]:
+        """return the types of an argument of a function"""
+        if isinstance(node, ast.arg):
+            if node.annotation:
+                return getArgTypes(node.annotation)
+            else:
+                return set()
+        elif isinstance(node, ast.Name):
+            return {node.id}
+        elif isinstance(node, ast.BinOp):
+            return getArgTypes(node.left) | getArgTypes(node.right)
+        elif isinstance(node, ast.Subscript):
+            return getArgTypes(node.value)
+        elif isinstance(node, ast.Attribute):
+            return getArgTypes(node.value)
+        else:
+            return set()
 
     def getType(lineno : int) -> str:
         return getTypeComment(file, lineno) if file else UNKNOWN
@@ -414,6 +433,8 @@ def parseTree(node : ast.AST, file : str, classes : list[str], parseIncludedFile
             return any(containType(elt, _type) for elt in node.elts)
         elif isinstance(node, ast.Tuple):
             return any(containType(elt, _type) for elt in node.elts)
+        elif isinstance(node, ast.BinOp):
+            return containType(node.left, _type) or containType(node.right, _type)
         elif isinstance(node, ast.Constant):
             return node.value == _type
         else:
@@ -426,11 +447,10 @@ def parseTree(node : ast.AST, file : str, classes : list[str], parseIncludedFile
         methods = {}
         attributes = {}
         properties = {}
-        aggregate = set() # for nested classes that are not created and destroyed with the parent class, but are used in the parent class
-                       # such objects are passed to the parent class in the constructor or in a method
-        composite = set() # for nested classes that are created and destroyed with the parent class
+        composition_contain = set()
+        aggregation_contain = set()
         for element in node.body:
-            if isinstance(element, ast.FunctionDef):
+            if isinstance(element, ast.FunctionDef): # parsing methods
                 # if the method has the decorator @property, then it's a property
                 if PropertyType(element):
                     parseProperty(element, parentStack + [str(node.name)], properties)
@@ -442,20 +462,36 @@ def parseTree(node : ast.AST, file : str, classes : list[str], parseIncludedFile
                         "isStatic": "staticmethod" in [decorator.id for decorator in element.decorator_list], #type: ignore
                         "visibility": "private" if element.name.startswith("__") else "protected" if element.name.startswith("_") else "public"
                     }
-                    # parse arguments types to find aggregate classes
-                    # there are three cases:
-                    # 1. the argument is a class that is defined inside the current class (it's name is relative to the current class) ex: TYPE
-                    # 2. the argument is a class that is defined elsewhere (it's name is absolute) ex : relation.TYPE
-                    # 3. the argument is a built-in type or is defined in a external module : in this case, ignore it
+                    
+                    # fill the aggregation list
                     for arg in element.args.args:
-                        if arg.arg == "self":
-                            continue
-                        if "annotation" in dir(arg) and arg.annotation and any(containType(arg.annotation, _type) for _type in classes):
-                            argType = getreturnString(arg.annotation)
-                            Logger.debug(f"Aggregate class {argType} found in method {element.name} of class {node.name}")
-                            
-                            aggregate.add(argType)
-                                
+                        aggregation_contain |= getArgTypes(arg)
+                    
+                    # fill the composition list
+                    if element.name == "__init__": # only check the __init__ method
+                        # check for all "Assign" in the body, even nested ones
+                        for elements in [ast.walk(e) for e in element.body]:
+                            for e in elements:
+                                if isinstance(e, ast.Assign):
+                                    if any(
+                                        isinstance(t, ast.Attribute) \
+                                        and isinstance(t.value, ast.Name) \
+                                        and t.value.id == "self" \
+                                        for t in e.targets):
+                                            
+                                        if isinstance(e.value, ast.Call):
+                                            c = e.value
+                                            def getTotalName(node : ast.AST) -> str:
+                                                if isinstance(node, ast.Name):
+                                                    return node.id
+                                                elif isinstance(node, ast.Attribute):
+                                                    return f"{getTotalName(node.value)}.{node.attr}"
+                                                else:
+                                                    return UNKNOWN
+                                            composition_contain.add(getTotalName(c.func))
+                                        else:
+                                            Logger.warning(f"Unknown type {ast.dump(e.value)}")
+                                            
                             
                     
             elif isinstance(element, ast.ClassDef):
@@ -473,8 +509,8 @@ def parseTree(node : ast.AST, file : str, classes : list[str], parseIncludedFile
             "inheritFrom": [getreturnString(base) for base in node.bases], #type: ignore
             "inheritedBy": [],
             "properties": properties,
-            "aggregate": list(aggregate),
-            "composite": list(composite)
+            "aggregation": [a for a in aggregation_contain if a in classes],
+            "composition": [c for c in composition_contain if c in classes]
         }
 
     def parseClassOrEnum(node : ast.ClassDef, parentStack : list[str] = []) -> None:
