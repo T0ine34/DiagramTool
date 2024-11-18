@@ -1,11 +1,12 @@
-from .main import fromSource
-
-from gamuLogger import Logger, LEVELS
 import argparse
 import time
 import traceback
 
+from gamuLogger import Logger, LEVELS
 Logger.setModule("DiagramTool")
+
+from .main import fromSource
+
 
 class Chronometer:
     def __init__(self):

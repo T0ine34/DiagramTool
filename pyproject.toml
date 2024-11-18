@@ -18,7 +18,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "gamuLogger>=2.0.6",
+    "gamuLogger>=3.0.2",
     "lxml>=4.6.3",
 ]
 

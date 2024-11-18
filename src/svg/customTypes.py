@@ -152,12 +152,13 @@ class Element:
 
 class Class(Element):
     __instances = {} # type: dict[str, Class]
-    def __init__(self, name : str, attributes : dict, properties : dict, methods : dict, inheritFrom : list):
+    def __init__(self, name : str, attributes : dict, properties : dict, methods : dict, inheritFrom : list, inheritedBy : list):
         super().__init__(name)
         self.attributes = attributes
         self.properties = properties
         self.methods = methods
         self.inheritFrom = inheritFrom
+        self.inheritedBy = inheritedBy
         
         self._width = self.__calcWidth()
         self._height = self.__calcHeight()
@@ -183,7 +184,7 @@ class Class(Element):
         
     @staticmethod
     def fromDict(name : str, classDict : dict) -> 'Class':
-        return Class(name, classDict['attributes'], classDict['properties'], classDict['methods'], classDict['inheritFrom'])
+        return Class(name, classDict['attributes'], classDict['properties'], classDict['methods'], classDict['inheritFrom'], classDict['inheritedBy'])
     
     def getInheritanceLevel(self) -> int:
         level = 0
@@ -330,8 +331,8 @@ class _Enum(Element):
         return height
     
     @staticmethod
-    def fromDict(name : str, enumDict : dict) -> 'Enum':
-        return Enum(name, enumDict['values'], enumDict['methods'])
+    def fromDict(name : str, enumDict : dict) -> '_Enum':
+        return _Enum(name, enumDict['values'], enumDict['methods'])
     
     def build(self) -> ETX.Element:
         G = super().build()

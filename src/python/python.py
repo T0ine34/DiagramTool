@@ -5,7 +5,7 @@ from typing import Any, Union
 
 from gamuLogger import Logger, LEVELS
 
-Logger.setModule("PythonParser")
+Logger.setModule("DiagramTool.PythonParser")
 
 UNKNOWN = "unknown"
 
@@ -249,6 +249,7 @@ def parseTree(node : ast.AST, file : str, classes : list[str], parseIncludedFile
                     }
                 },
                 "inheritFrom": ["ParentClass"],
+                "inheritedBy": ["ChildClass"],
             }
             "ClassName2": {
                 ...
@@ -470,6 +471,7 @@ def parseTree(node : ast.AST, file : str, classes : list[str], parseIncludedFile
             "methods": methods,
             "attributes": attributes,
             "inheritFrom": [getreturnString(base) for base in node.bases], #type: ignore
+            "inheritedBy": [],
             "properties": properties,
             "aggregate": list(aggregate),
             "composite": list(composite)
@@ -544,6 +546,14 @@ def parseTree(node : ast.AST, file : str, classes : list[str], parseIncludedFile
             tree = getTree(file)
             parsed = parseTree(tree, file, classes, True, dump)
             result = merge(result, parsed)
+
+    # add inheritedBy to classes
+    for className, classData in result["classes"].items():
+        for parent in classData["inheritFrom"]:
+            if parent in result["classes"] and className not in result["classes"][parent]["inheritedBy"]:
+                result["classes"][parent]["inheritedBy"].append(className)
+            else:
+                Logger.warning(f"Class {parent} inherited by class {className} is not defined")
 
     return result 
     

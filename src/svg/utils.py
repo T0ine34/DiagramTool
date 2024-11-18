@@ -1,8 +1,9 @@
+from typing import Callable, Sequence
 import lxml.etree as ET
 
 from gamuLogger import Logger
 
-Logger.setModule("SVG_Utils")
+Logger.setModule("DiagramTool.SVG_Utils")
 
 
 def getTextWidth(text : str, fontsize : int) -> int:
@@ -49,18 +50,18 @@ def createMissingClasses(data : dict) -> None:
                     "inheritFrom": []
                 }
 
-
-
-
-
-
-
-
-
-
-
-
-
+def groupBy(data: Sequence, key: Callable):
+    groups = {}
+    for item in data:
+        k = key(item)
+        if k not in groups:
+            groups[k] = []
+        groups[k].append(item)
+    data = []
+    for k, v in groups.items():
+        for item in v:
+            data.append(item)
+    return data
 
 
 

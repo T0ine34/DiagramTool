@@ -14,13 +14,14 @@ def createDiagram(data) -> SVG:
     objects = [
         Class.fromDict(key, value) for key, value in data['classes'].items()
     ]
-    objects.extend(
-        _Enum.fromDict(key, value) for key, value in data['enums'].items() #type: ignore
-    )
+    enums = [
+        _Enum.fromDict(key, value) for key, value in data['enums'].items()
+    ]
+    
     svg = SVG()
 
     # place objects
-    svg.placeObjects(objects)
+    svg.placeObjects(objects, enums)
 
     # place relations
     svg.placeRelations(objects, data)

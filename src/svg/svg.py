@@ -3,9 +3,11 @@ import lxml.etree as ET
 from typing import Sequence
 
 try:
-    from .customTypes import Class, Enum, Relation, Element
+    from .customTypes import Class, _Enum as Enum, Relation, Element
+    from .utils import groupBy
 except ImportError:
-    from customTypes import Class, Enum, Relation, Element
+    from customTypes import Class, _Enum as Enum, Relation, Element
+    from utils import groupBy
     
 from gamuLogger import Logger
     
@@ -40,16 +42,22 @@ class SVG:
             self.drawBorder(width, height)
         return ET.tostring(self.__tree, pretty_print=True).decode("utf-8") #type: ignore
 
-    def placeObjects(self, objects : Sequence[Element]) -> None:
+    def placeObjects(self, classes : Sequence[Class], enums : Sequence[Enum]) -> None:
         
         #place classes
-        nbLines = max([1] + [obj.getInheritanceTreeSize() for obj in objects if isinstance(obj, Class)])
+        
+        # group classes by inheritance children
+        def sortKey(obj):
+            return obj.inheritedBy[0] if len(obj.inheritedBy) > 0 else ""
+        classes = groupBy(classes, sortKey)
+        
+        
+        nbLines = max([1] + [obj.getInheritanceTreeSize() for obj in classes])
         grid = [
             [
                 obj
-                for obj in objects
-                if isinstance(obj, Class)
-                and obj.getInheritanceLevel() == crtLine
+                for obj in classes
+                if obj.getInheritanceLevel() == crtLine
             ]
             for crtLine in range(nbLines)
         ]
@@ -72,7 +80,7 @@ class SVG:
                     for other in line:
                         if other == obj:
                             continue
-                        if obj.isOverlapping(other):
+                        if obj.isOverlapping(other): #type: ignore
                             overlapping = other
                             break
                     return overlapping
@@ -88,11 +96,13 @@ class SVG:
                 x += obj.width + SPACE
             y += lineHeights[i] + SPACE
             
+            
+        
         # place enums (all in one line)
         y -= SPACE # remove last SPACE
         x = SPACE
-        for obj in [obj for obj in objects if isinstance(obj, Enum)]:
-            obj.place(x, y)
+        for obj in enums:
+            obj.place(x, y) 
             self.append(obj)
             x += obj.width + 30
         

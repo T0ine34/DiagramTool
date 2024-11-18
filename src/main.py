@@ -2,12 +2,12 @@ import sys
 from enum import Enum
 from typing import Callable
 
-from . import parse_python
-from . import createDiagram
+from .python import parse as parse_python
+from .svg import createDiagram
 
 from gamuLogger import Logger
 
-Logger.setModule("DiagramTool")
+Logger.setModule("DiagramTool.main")
 
 
 class LANGUAGES(Enum):
