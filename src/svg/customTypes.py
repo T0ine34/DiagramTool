@@ -152,13 +152,15 @@ class Element:
 
 class Class(Element):
     __instances = {} # type: dict[str, Class]
-    def __init__(self, name : str, attributes : dict, properties : dict, methods : dict, inheritFrom : list, inheritedBy : list):
+    def __init__(self, name : str, attributes : dict, properties : dict, methods : dict, inheritFrom : list, inheritedBy : list, composition : list, aggregation : list):
         super().__init__(name)
         self.attributes = attributes
         self.properties = properties
         self.methods = methods
         self.inheritFrom = inheritFrom
         self.inheritedBy = inheritedBy
+        self.composition = composition
+        self.aggregation = aggregation
         
         self._width = self.__calcWidth()
         self._height = self.__calcHeight()
@@ -184,7 +186,7 @@ class Class(Element):
         
     @staticmethod
     def fromDict(name : str, classDict : dict) -> 'Class':
-        return Class(name, classDict['attributes'], classDict['properties'], classDict['methods'], classDict['inheritFrom'], classDict['inheritedBy'])
+        return Class(name, classDict['attributes'], classDict['properties'], classDict['methods'], classDict['inheritFrom'], classDict['inheritedBy'], classDict['composition'], classDict['aggregation'])
     
     def getInheritanceLevel(self) -> int:
         level = 0

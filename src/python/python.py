@@ -509,8 +509,8 @@ def parseTree(node : ast.AST, file : str, classes : list[str], parseIncludedFile
             "inheritFrom": [getreturnString(base) for base in node.bases], #type: ignore
             "inheritedBy": [],
             "properties": properties,
-            "aggregation": [a for a in aggregation_contain if a in classes],
-            "composition": [c for c in composition_contain if c in classes]
+            "aggregation": aggregation_contain,
+            "composition": composition_contain
         }
 
     def parseClassOrEnum(node : ast.ClassDef, parentStack : list[str] = []) -> None:
@@ -590,6 +590,11 @@ def parseTree(node : ast.AST, file : str, classes : list[str], parseIncludedFile
                 result["classes"][parent]["inheritedBy"].append(className)
             else:
                 Logger.warning(f"Class {parent} inherited by class {className} is not defined")
+    
+    # remove elements of composition and aggregation that are not classes
+    for className, classData in result["classes"].items():
+        classData["composition"] = [c for c in classData["composition"] if c in result["classes"].keys()]
+        classData["aggregation"] = [c for c in classData["aggregation"] if c in result["classes"].keys()]
 
     return result 
     

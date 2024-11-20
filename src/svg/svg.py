@@ -1,6 +1,9 @@
 import lxml.etree as ET
 
 from typing import Sequence
+import networkx as nx 
+from scipy.optimize import linear_sum_assignment
+import numpy as np
 
 try:
     from .customTypes import Class, _Enum as Enum, Relation, Element
@@ -10,8 +13,36 @@ except ImportError:
     from utils import groupBy
     
 from gamuLogger import Logger
+Logger.setModule("DiagramTool.SVG")
     
 SPACE = 50
+
+
+
+def assign_to_grid(G : nx.Graph, grid, vertex_sizes, margin):
+    # Calculate the cost matrix based on distances between vertices and grid points
+    cost_matrix = []
+    vertex_list = list(G.nodes)
+    for v in vertex_list:
+        v_cost = []
+        for gx, gy in grid:
+            # Add a cost proportional to the sum of vertex sizes (to maintain spacing)
+            size_with_margin = sum([dim + margin for dim in vertex_sizes[v]])
+            v_cost.append(size_with_margin + np.linalg.norm([gx, gy]))
+        cost_matrix.append(v_cost)
+    
+    # Solve assignment problem to minimize total cost
+    row_ind, col_ind = linear_sum_assignment(cost_matrix)
+    assigned_positions = {vertex_list[i]: grid[j] for i, j in zip(row_ind, col_ind)}
+    
+    counter = 0
+    for k, v in assigned_positions.items():
+        assigned_positions[k] = (v[0] + margin, v[1] + margin)
+        Logger.debug(f"Assigned {k} to {assigned_positions[k]}")
+    
+    return assigned_positions
+
+
 
 class SVG:
     def __init__(self) -> None:
@@ -44,62 +75,43 @@ class SVG:
 
     def placeObjects(self, classes : Sequence[Class], enums : Sequence[Enum]) -> None:
         
-        #place classes
-        
-        # group classes by inheritance children
-        def sortKey(obj):
-            return obj.inheritedBy[0] if len(obj.inheritedBy) > 0 else ""
-        classes = groupBy(classes, sortKey)
-        
-        
-        nbLines = max([1] + [obj.getInheritanceTreeSize() for obj in classes])
-        grid = [
-            [
-                obj
-                for obj in classes
-                if obj.getInheritanceLevel() == crtLine
-            ]
-            for crtLine in range(nbLines)
-        ]
-        
-        lineHeights = [max([0] + [obj.height for obj in line]) for line in grid]
-        
-        y = SPACE
-        for i, line in enumerate(grid):
-            x = SPACE
-            for obj in line:
-                bestX = obj.getBestX()
-                obj.place(bestX, y)
-                if bestX == -1:
-                    obj.place(x, y)
+        # place classes
+        classes_index = list(enumerate(classes)) # form of (index, obj)
+        vertices = range(len(classes))
+        edges = [] # form of (source_index, target_index)
+        for i, obj in classes_index:
+            # inheritances
+            for inh in obj.inheritFrom:
+                target_index = next(index for index, o in classes_index if o.name == inh)
+                edges.append((i, target_index))
+            # compositions
+            for comp in obj.composition:
+                target_index = next(index for index, o in classes_index if o.name == comp)
+                edges.append((i, target_index))
+            # aggregations
+            for agg in obj.aggregation:
+                target_index = next(index for index, o in classes_index if o.name == agg)
+                edges.append((i, target_index))
                 
-                # while any(obj.isOverlapping(other) for other in line if other != obj):
-                #     obj.place(obj.x + SPACE, obj.y)
-                def getOverlapping():
-                    overlapping = None
-                    for other in line:
-                        if other == obj:
-                            continue
-                        if obj.isOverlapping(other): #type: ignore
-                            overlapping = other
-                            break
-                    return overlapping
-                
-                overlapping = getOverlapping()
-                while overlapping:
-                    obj.place(overlapping.E[0] + SPACE, obj.y)
-                    overlapping = getOverlapping()
-                
-                
-                
-                self.append(obj)
-                x += obj.width + SPACE
-            y += lineHeights[i] + SPACE
-            
-            
+        vertexSizes = { i: (c.width, c.height) for i, c in classes_index}
+        
+        G = nx.Graph()
+        G.add_nodes_from(vertices)
+        G.add_edges_from(edges)
+        
+        x_spacing = max(c.width for c in classes) + SPACE
+        y_spacing = max(c.height for c in classes) + SPACE
+        grid = [(x * x_spacing, y * y_spacing) for x in range(len(classes)) for y in range(len(classes))]
+        print(grid)
+        
+        assigned_positions = assign_to_grid(G, grid, vertexSizes, SPACE)
+        
+        for i, obj in classes_index:
+            obj.place(*assigned_positions[i])
+            self.append(obj)
         
         # place enums (all in one line)
-        y -= SPACE # remove last SPACE
+        y = max(int(obj.SE[1]) for obj in classes) + SPACE
         x = SPACE
         for obj in enums:
             obj.place(x, y) 
@@ -110,9 +122,17 @@ class SVG:
     def placeRelations(self, objects : Sequence[Element], data : dict) -> None:
         for sourceName, sourceData in data['classes'].items():
             source = next(obj for obj in objects if obj.name == sourceName)
+            
+            # place inheritance relations
             for targetName in sourceData['inheritFrom']:
                 target = next(obj for obj in objects if obj.name == targetName)
                 relation = Relation(source, target, Relation.TYPE.INHERITANCE)
+                self.append(relation)
+                
+            # place composition relations
+            for targetName in sourceData['composition']:
+                target = next(obj for obj in objects if obj.name == targetName)
+                relation = Relation(source, target, Relation.TYPE.COMPOSITION)
                 self.append(relation)
 
 

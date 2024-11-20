@@ -3,7 +3,7 @@ import time
 import traceback
 
 from gamuLogger import Logger, LEVELS
-Logger.setModule("DiagramTool")
+Logger.setModule("DiagramTool.")
 
 from .main import fromSource
 

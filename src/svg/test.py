@@ -60,6 +60,7 @@ def plot_graph_on_grid(G, positions, vertex_sizes, margin):
 
 # Example graph
 G = nx.Graph()
+G.add_nodes_from(range(4))
 G.add_edges_from([(0, 1), (1, 2), (2, 3), (3, 0), (0, 2)])
 
 # Assign sizes to vertices
@@ -75,5 +76,7 @@ grid = create_grid(rows=5, cols=5, spacing=grid_spacing)
 # Assign vertices to grid positions
 positions = assign_to_grid(G, grid, vertex_sizes, margin)
 
+print(positions)
+
 # Plot the graph
-plot_graph_on_grid(G, positions, vertex_sizes, margin)
+# plot_graph_on_grid(G, positions, vertex_sizes, margin)
