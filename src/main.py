@@ -61,9 +61,7 @@ def fromSource(source : str, output : str, save_ast : bool = False, dump : bool 
         with open("ast.json", 'w') as f:
             import json
             json.dump(data, f, indent=4)
-        Logger.info("saved ast to ast.json")
-    
-    Logger.debug(f"parsed data: {data.keys()}")
+        Logger.info("saved ast to ast.json because of --save-ast flag")
 
     svg = createDiagram(data, color)
     svg.save(output, showBorder=showBorder)
