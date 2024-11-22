@@ -3,13 +3,13 @@ import itertools
 import lxml.etree as ET
 import xml.etree.ElementTree as ETX
 from enum import Enum
+import colour
 
 try:
     from .utils import getTextWidth, getTextHeight, Attribute2Text, Method2Text
 except ImportError:
     from utils import getTextWidth, getTextHeight, Attribute2Text, Method2Text
 
-COLOR = "black"
 TITLE_FONT_SIZE = 26
 ATTRIBUTE_FONT_SIZE = 20
 SEPARATOR_HEIGHT = 20
@@ -27,6 +27,11 @@ def Separator(x : int, y : int, width : int, color : str = 'black') -> ETX.Eleme
     return separator #type: ignore
 
 
+class SIDE(Enum):
+    N = 0
+    S = 1
+    W = 2
+    E = 3
 
 class Element:
     """Base class for all elements"""
@@ -53,7 +58,7 @@ class Element:
         return ((side1[0] - side2[0])**2 + (side1[1] - side2[1])**2)**0.5
         
         
-    def build(self) -> ETX.Element:
+    def build(self, color : colour.Color) -> ETX.Element:
 
         element = ET.Element("g", None, None)
         element.attrib["class"] = "element"
@@ -126,16 +131,32 @@ class Element:
     @property
     def center(self) -> tuple[int, int]:
         return (self.__x + self._width//2, self.__y + self._height//2)
+    
+    def getSide(self, side : SIDE) -> tuple[int, int]:
+        match side:
+            case SIDE.N:
+                return self.N
+            case SIDE.S:
+                return self.S
+            case SIDE.W:
+                return self.W
+            case SIDE.E:
+                return self.E
+            case _:
+                raise ValueError("Invalid side")
 
-    def getNearSide(self, x : int, y : int) -> tuple[int, int]:
+    def getNearSide(self, x : int, y : int) -> tuple[tuple[int, int], SIDE]:
         distance = {
-            self.N : ((self.N[0] - x)**2 + (self.N[1] - y)**2),
-            self.S : ((self.S[0] - x)**2 + (self.S[1] - y)**2),
-            self.W : ((self.W[0] - x)**2 + (self.W[1] - y)**2),
-            self.E : ((self.E[0] - x)**2 + (self.E[1] - y)**2)
+            SIDE.N : ((self.N[0] - x)**2 + (self.N[1] - y)**2),
+            SIDE.S : ((self.S[0] - x)**2 + (self.S[1] - y)**2),
+            SIDE.W : ((self.W[0] - x)**2 + (self.W[1] - y)**2),
+            SIDE.E : ((self.E[0] - x)**2 + (self.E[1] - y)**2)
         }
+
+        side = min(distance, key=distance.get)
+        return self.getSide(side), side
         
-        return min(distance, key=distance.get) #type: ignore
+        
 
     def isOverlapping(self, other : 'Element') -> bool:
         if not self.placed or not other.placed:
@@ -208,14 +229,14 @@ class Class(Element):
                 size += cls.__reqGetInheritanceTreeSize()
         return size
     
-    def build(self) -> ETX.Element:   
-        G = super().build()
+    def build(self, color : colour.Color) -> ETX.Element:   
+        G = super().build(color)
              
         # group
         G.attrib["class"] = "class"
         G.attrib['width'] = f"{self._width}"
         G.attrib['height'] = f"{self._height}"
-        G.attrib['color'] = COLOR
+        G.attrib['color'] = color.hex
         G.attrib['transform'] = f"translate({self.x} {self.y})"
         
         # border
@@ -336,14 +357,14 @@ class _Enum(Element):
     def fromDict(name : str, enumDict : dict) -> '_Enum':
         return _Enum(name, enumDict['values'], enumDict['methods'])
     
-    def build(self) -> ETX.Element:
-        G = super().build()
+    def build(self, color : colour.Color) -> ETX.Element:
+        G = super().build(color)
     
         # group
         G.attrib["class"] = "enum"
         G.attrib['width'] = f"{self._width}"
         G.attrib['height'] = f"{self._height}"
-        G.attrib['color'] = COLOR
+        G.attrib['color'] = color.hex
         G.attrib['transform'] = f"translate({self.x} {self.y})"
         
         # border
@@ -490,7 +511,7 @@ def Line(start : tuple[int, int], end : tuple[int, int], lineType : LINE_TYPE):
 
 def GeomLine(start : tuple[int, int], end : tuple[int, int], lineType : LINE_TYPE):
     G = ET.Element("g", None, None)
-    G.attrib["class"] = "relation"
+    G.attrib["class"] = "line"
     
     if start[0] == end[0]:
         G.append(Line(start, end, lineType))
@@ -521,39 +542,77 @@ class Relation:
         self.target = target
         self.relationType = relationType
         
-    def build(self) -> ETX.Element:
+    def build(self, color : colour.Color) -> ETX.Element:
         G = ET.Element("g", None, None)
         G.attrib["class"] = "relation"
+        G.attrib["color"] = color.hex
         
-        startPoint = self.source.N
-        endPoint = self.target.S
+        startPoint, startSide = self.source.getNearSide(*self.target.center)
+        endPoint, endSide = self.target.getNearSide(*self.source.center)
     
-        angle = -90
+        angle = 0
+        arrowEndPoint = [*endPoint]
+        match endSide:
+            case SIDE.N:
+                angle = 90
+                arrowEndPoint[1] -= 50
+            case SIDE.S:
+                angle = -90
+                arrowEndPoint[1] += 50
+            case SIDE.W:
+                angle = 0
+                arrowEndPoint[0] -= 50
+            case SIDE.E:
+                angle = 180
+                arrowEndPoint[0] += 50
+            case _:
+                raise ValueError("Invalid side")
         
+        arrowEndPoint = tuple(arrowEndPoint)
+        
+        startPointStep = [*startPoint]
+        match startSide:
+            case SIDE.N: startPointStep[1] -= 50
+            case SIDE.S: startPointStep[1] += 50
+            case SIDE.W: startPointStep[0] -= 50
+            case SIDE.E: startPointStep[0] += 50
+            case _: raise ValueError("Invalid side")
         
         match self.relationType:
             case Relation.TYPE.ASSOCIATION: # Solid line, open triangle
-                G.append(GeomLine(startPoint, endPoint, LINE_TYPE.SOLID))
+                G.append(Line(arrowEndPoint, endPoint, LINE_TYPE.SOLID))
+                G.append(GeomLine(startPointStep, arrowEndPoint, LINE_TYPE.SOLID))
+                G.append(Line(startPoint, startPointStep, LINE_TYPE.SOLID))
                 G.append(Arrow(endPoint, angle, ARROW_TYPE.OPEN_TRIANGLE, False))
                 
             case Relation.TYPE.AGGREGATION: # Solid line, empty diamond
-                G.append(GeomLine(startPoint, endPoint, LINE_TYPE.SOLID))
+                G.append(Line(arrowEndPoint, endPoint, LINE_TYPE.SOLID))
+                G.append(GeomLine(startPointStep, arrowEndPoint, LINE_TYPE.SOLID))
+                G.append(Line(startPoint, startPointStep, LINE_TYPE.SOLID))
                 G.append(Arrow(endPoint, angle, ARROW_TYPE.DIAMOND, False))
                 
             case Relation.TYPE.COMPOSITION: # Solid line, filled diamond
-                G.append(GeomLine(startPoint, endPoint, LINE_TYPE.SOLID))
+                G.append(Line(arrowEndPoint, endPoint, LINE_TYPE.SOLID))
+                G.append(GeomLine(startPointStep, arrowEndPoint, LINE_TYPE.SOLID))
+                G.append(Line(startPoint, startPointStep, LINE_TYPE.SOLID))
                 G.append(Arrow(endPoint, angle, ARROW_TYPE.DIAMOND, True))
                 
             case Relation.TYPE.INHERITANCE: # Solid line, filled triangle
-                G.append(GeomLine(startPoint, endPoint, LINE_TYPE.SOLID))
+                G.append(Line(arrowEndPoint, endPoint, LINE_TYPE.SOLID))
+                G.append(GeomLine(startPointStep, arrowEndPoint, LINE_TYPE.SOLID))
+                G.append(Line(startPoint, startPointStep, LINE_TYPE.SOLID))
                 G.append(Arrow(endPoint, angle, ARROW_TYPE.TRIANGLE, True))
                 
             case Relation.TYPE.IMPLEMENTATION: # Dashed line, filled triangle
-                G.append(GeomLine(startPoint, endPoint, LINE_TYPE.DASHED))
+                G.append(Line(arrowEndPoint, endPoint, LINE_TYPE.DASHED))
+                G.append(GeomLine(startPointStep, arrowEndPoint, LINE_TYPE.DASHED))
+                G.append(Line(startPoint, startPointStep, LINE_TYPE.DASHED))
                 G.append(Arrow(endPoint, angle, ARROW_TYPE.TRIANGLE, True))
                 
             case Relation.TYPE.DEPENDENCY: # Dashed line, open triangle
-                G.append(GeomLine(startPoint, endPoint, LINE_TYPE.DASHED))
+                G.append(Line(arrowEndPoint, endPoint, LINE_TYPE.DASHED))
+                G.append(GeomLine(startPointStep, arrowEndPoint, LINE_TYPE.DASHED))
+                G.append(Line(startPoint, startPointStep, LINE_TYPE.DASHED))
                 G.append(Arrow(endPoint, angle, ARROW_TYPE.OPEN_TRIANGLE, False))
                 
             case _:

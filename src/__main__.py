@@ -1,7 +1,7 @@
 import argparse
 import time
 import traceback
-
+import colour
 from gamuLogger import Logger, LEVELS
 Logger.setModule("DiagramTool.")
 
@@ -30,6 +30,7 @@ def buildArgParser() -> argparse.ArgumentParser:
     parser.add_argument('--dump', action='store_true', help='dump parsed data to stdout', default=False)
     parser.add_argument('--save-ast', action='store_true', help='save ast to file', default=False)
     parser.add_argument('--show-border', action='store_true', help='show border around the image', default=False)
+    parser.add_argument('-c', '--color', type=str, help='color of the diagram', default='black')
     return parser
 
 
@@ -41,11 +42,13 @@ def main():
     args = getArgs()
     if args.debug:
         Logger.setLevel('stdout', LEVELS.DEBUG)
+        
+    color = colour.Color(args.color)
     
     chrono = Chronometer()
     try:
         with chrono:
-            fromSource(args.source, args.output, args.save_ast, args.dump, args.show_border)
+            fromSource(args.source, args.output, args.save_ast, args.dump, args.show_border, color)
     except Exception as e:
         Logger.critical(f"An error occured: {e}\n{traceback.format_exc()}")
         exit(1)

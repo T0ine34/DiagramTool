@@ -1,6 +1,7 @@
 import sys
 from enum import Enum
 from typing import Callable
+import colour
 
 from .python import parse as parse_python
 from .svg import createDiagram
@@ -47,7 +48,7 @@ def getParser(language : LANGUAGES) -> Callable[[str, bool, bool], dict[str, str
 
 
 
-def fromSource(source : str, output : str, save_ast : bool = False, dump : bool = False, showBorder : bool = False):
+def fromSource(source : str, output : str, save_ast : bool = False, dump : bool = False, showBorder : bool = False, color : colour.Color = colour.Color('black')) -> None:
     """entry point for the module"""
     
     language = getFileLanguage(source)
@@ -64,7 +65,7 @@ def fromSource(source : str, output : str, save_ast : bool = False, dump : bool 
     
     Logger.debug(f"parsed data: {data.keys()}")
 
-    svg = createDiagram(data)
+    svg = createDiagram(data, color)
     svg.save(output, showBorder=showBorder)
     
     Logger.info(f"saved diagram to {output}")

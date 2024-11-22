@@ -20,6 +20,7 @@ classifiers = [
 dependencies = [
     "gamuLogger>=3.0.2",
     "lxml>=4.6.3",
+    "colour>=0.1.5",
 ]
 
 [project.urls]

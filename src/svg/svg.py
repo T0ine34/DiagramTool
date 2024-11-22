@@ -4,6 +4,7 @@ from typing import Sequence
 import networkx as nx 
 from scipy.optimize import linear_sum_assignment
 import numpy as np
+import colour
 
 try:
     from .customTypes import Class, _Enum as Enum, Relation, Element
@@ -15,7 +16,7 @@ except ImportError:
 from gamuLogger import Logger
 Logger.setModule("DiagramTool.SVG")
     
-SPACE = 50
+SPACE = 100
 
 
 
@@ -45,15 +46,16 @@ def assign_to_grid(G : nx.Graph, grid, vertex_sizes, margin):
 
 
 class SVG:
-    def __init__(self) -> None:
+    def __init__(self, color : colour.Color) -> None:
         self.__tree = ET.Element("svg", None, None)
         self.__tree.attrib['xmlns'] = "http://www.w3.org/2000/svg"
         self.__objects = []
+        self.__color = color
 
     def append(self, element) -> None:
         if isinstance(element, Element):
             self.__objects.append(element)
-        self.__tree.append(element.build())
+        self.__tree.append(element.build(self.__color))
         
     def save(self, filename : str, showBorder : bool = False) -> None:
         with open(filename, "w") as file:
@@ -102,7 +104,6 @@ class SVG:
         x_spacing = max(c.width for c in classes) + SPACE
         y_spacing = max(c.height for c in classes) + SPACE
         grid = [(x * x_spacing, y * y_spacing) for x in range(len(classes)) for y in range(len(classes))]
-        print(grid)
         
         assigned_positions = assign_to_grid(G, grid, vertexSizes, SPACE)
         

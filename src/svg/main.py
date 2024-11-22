@@ -1,3 +1,5 @@
+import colour
+
 try:
     from .svg import SVG
     from .utils import createMissingClasses
@@ -8,7 +10,7 @@ except ImportError:
     from customTypes import Class, _Enum, Relation, Element
 
 
-def createDiagram(data) -> SVG:
+def createDiagram(data, color : colour.Color) -> SVG:
     createMissingClasses(data)
     
     objects = [
@@ -18,7 +20,7 @@ def createDiagram(data) -> SVG:
         _Enum.fromDict(key, value) for key, value in data['enums'].items()
     ]
     
-    svg = SVG()
+    svg = SVG(color)
 
     # place objects
     svg.placeObjects(objects, enums)
@@ -40,5 +42,5 @@ if __name__ == "__main__":
     with open(args.file, 'r') as f:
         data = json.load(f)
 
-    svg = createDiagram(data)
+    svg = createDiagram(data) #type: SVG
     svg.save("test.svg", showBorder=True)
